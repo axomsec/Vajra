@@ -1,63 +1,40 @@
 import filters.InterceptingFilter;
 
-import net.lightbody.bmp.mitm.CertificateInfo;
-import net.lightbody.bmp.mitm.RootCertificateGenerator;
 import net.lightbody.bmp.mitm.manager.ImpersonatingMitmManager;
-import org.littleshoot.proxy.HttpProxyServer;
-import org.littleshoot.proxy.MitmManager;
-import org.littleshoot.proxy.extras.SelfSignedMitmManager;
-import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
+import net.lightbody.bmp.mitm.PemFileCertificateSource;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.security.KeyStore;
-import java.util.Date;
+import org.littleshoot.proxy.HttpProxyServer;
+
+import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
+import utils.CertificateUtil;
+
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
 
 
-        CertificateInfo certificateInfo = new CertificateInfo()
-                .commonName("Vajra Certificate")
-                .organization("Vajra Private Ltd")
-                .organizationalUnit("IT Security")
-                .email("rony@axomsec.com")
-                .locality("Guwahati")
-                .state("Assam")
-                .countryCode("IN")
-                .notBefore(new Date())
-                .notAfter(new Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000)
-        );
+        CertificateUtil certificateUtil = new CertificateUtil();
 
+        certificateUtil.generateCertificate("/home/jessi/code/cacert/new2/cacert.cer", "/home/jessi/code/cacert/new2/key.pem");
 
-
-        // create a dynamic CA root certificate generator using default settings (2048-bit RSA keys)
-        RootCertificateGenerator rootCertificateGenerator = RootCertificateGenerator.builder()
-                .certificateInfo(certificateInfo)
-                .build();
-
-        // save the dynamically-generated CA root certificate for installation in a browser
-        rootCertificateGenerator.saveRootCertificateAsPemFile(new File("/tmp/my-ca.cer"));
-
-
-
-        System.out.println(rootCertificateGenerator.encodeRootCertificateAsPem());
+        PemFileCertificateSource pemFileCertificateSource = certificateUtil.CertificateSource("/home/jessi/code/cacert/new2/cacert.cer",
+                "/home/jessi/code/cacert/new2/key.pem");
 
 
         // tell the MitmManager to use the root certificate we just generated
         ImpersonatingMitmManager mitmManager = ImpersonatingMitmManager.builder()
-                .rootCertificateSource(rootCertificateGenerator)
+                .rootCertificateSource(pemFileCertificateSource)
                 .build();
 
 
         HttpProxyServer server = DefaultHttpProxyServer.bootstrap()
-                        .withPort(8080)
-                        .withManInTheMiddle(mitmManager)
-                        .withFiltersSource(new InterceptingFilter())
-                        .withAllowLocalOnly(false)
-                        .withAuthenticateSslClients(false)
-                        .start();
+                .withPort(8080)
+                .withManInTheMiddle(mitmManager)
+                .withFiltersSource(new InterceptingFilter())
+                .withAllowLocalOnly(false)
+                .withAuthenticateSslClients(false)
+                .start();
 
 
 
