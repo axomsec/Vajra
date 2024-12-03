@@ -68,6 +68,12 @@
             <version>20.0</version> <!-- Compatible with getHostText() -->
         </dependency>
 
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+            <version>3.5.2</version>
+        </dependency>
+
 
 
     </dependencies>

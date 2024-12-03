@@ -2,6 +2,7 @@ package filters;
 
 
 
+import controller.proxy.VajraInterceptController;
 import handlers.RequestInterceptorHandler;
 import handlers.ResponseInterceptorHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -11,6 +12,13 @@ import org.littleshoot.proxy.HttpFiltersSourceAdapter;
 
 public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
+    private final VajraInterceptController vajraInterceptController;
+
+    public InterceptingFilter(VajraInterceptController vajraInterceptController) {
+
+        this.vajraInterceptController = vajraInterceptController;
+    }
+
     @Override
     public HttpFiltersAdapter filterRequest(HttpRequest originalRequest, ChannelHandlerContext ctx) {
         return new HttpFiltersAdapter(originalRequest) {
@@ -18,7 +26,10 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
             @Override
             public HttpResponse clientToProxyRequest(HttpObject httpObject) {
                 if (httpObject instanceof FullHttpRequest) {
-                    RequestInterceptorHandler.handleRequest((FullHttpRequest) httpObject);
+
+                    String interceptedData = RequestInterceptorHandler.handleRequest((FullHttpRequest) httpObject);
+                    // passing the intercepted data to the controller.
+                    vajraInterceptController.updateRequestText(interceptedData);
                 }
                 return null;  // Let the request continue unmodified
             }

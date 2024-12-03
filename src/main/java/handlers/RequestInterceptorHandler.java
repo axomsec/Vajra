@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class RequestInterceptorHandler {
 
-    public static void handleRequest(FullHttpRequest request) {
+    public static String handleRequest(FullHttpRequest request) {
         StringBuilder interceptedData = new StringBuilder();
 
         // Format request line
@@ -62,6 +62,7 @@ public class RequestInterceptorHandler {
 
         // Log the formatted intercepted data
         LoggerUtil.log("Intercepted Request:\n" + interceptedData.toString());
+        return interceptedData.toString();
     }
 
 

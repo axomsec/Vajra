@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="littleshoot.littleproxy" type="repository">
+    <properties maven-id="org.littleshoot:littleproxy:1.1.2" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/littleproxy-1.1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/guava-20.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/commons-lang3-3.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/netty-all-4.0.44.Final.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/barchart-udt-bundle-2.3.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/slf4j-api-1.7.24.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
