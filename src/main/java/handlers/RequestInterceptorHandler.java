@@ -1,7 +1,6 @@
 package handlers;
 
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
 import utils.LoggerUtil;
 
@@ -84,5 +83,44 @@ public class RequestInterceptorHandler {
         }
         return formData;
     }
+
+    public static FullHttpRequest parseModifiedRequest(String modifiedRequest) {
+        try {
+            String[] sections = modifiedRequest.split("\n\n", 2); // Split into headers and body
+            String[] lines = sections[0].split("\n");
+
+            // Parse the request line
+            String[] requestLine = lines[0].split(" ");
+            HttpMethod method = HttpMethod.valueOf(requestLine[0]);
+            String uri = requestLine[1];
+            HttpVersion version = HttpVersion.valueOf(requestLine[2]);
+
+            // Create a new FullHttpRequest
+            FullHttpRequest newRequest = new DefaultFullHttpRequest(version, method, uri);
+
+            // Parse headers
+            for (int i = 1; i < lines.length; i++) {
+                String line = lines[i];
+                if (line.contains(":")) {
+                    String[] headerParts = line.split(":", 2);
+                    newRequest.headers().set(headerParts[0].trim(), headerParts[1].trim());
+                }
+            }
+
+            // Parse body
+            if (sections.length > 1) {
+                String body = sections[1];
+                newRequest.content().clear().writeBytes(body.getBytes(CharsetUtil.UTF_8));
+                newRequest.headers().set(HttpHeaderNames.CONTENT_LENGTH, body.length());
+            }
+
+            System.out.println("parseModifiedRequest(): " + newRequest.headers() + "\n -- \n"  + newRequest.content());
+            return newRequest;
+        } catch (Exception e) {
+            LoggerUtil.log("Error parsing modified request: " + e.getMessage());
+            return null;
+        }
+    }
+
 
 }

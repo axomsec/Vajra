@@ -40,7 +40,37 @@ public class Vajra extends JFrame  {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(700, 900);
 
-//        interceptButton.addActionListener(this);
+
+
+        /***
+         * Interception Related UI Changes
+         */
+
+        // UI changes specific to  JTextArea
+        // line wrapping
+        interceptedRequest.setLineWrap(true);
+        interceptedRequest.setWrapStyleWord(true);
+
+//        JScrollPane scrollPane = new JScrollPane(interceptedRequest);
+//        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+//        scrollPane.setVerticalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+
+
+        // UI Changes specific to Intercept, Forward, Drop Buttons
+
+        // Intercept button
+//        interceptButton.setPreferredSize(new Dimension(100, 2));
+//        interceptButton.setMinimumSize(new Dimension(2,2));
+//        interceptButton.setMaximumSize(new Dimension(2,2));
+
+        // Forward button
+//        forwardButton.setPreferredSize(new Dimension(2, 2));
+//        forwardButton.setMinimumSize(new Dimension(2,2));
+//        forwardButton.setMaximumSize(new Dimension(2,2));
+
+
+        setPreferredSize(new Dimension(1024, 900));
 
         setVisible(true);
     }
@@ -78,6 +108,7 @@ public class Vajra extends JFrame  {
         interceptButton.setBackground(background);
         interceptButton.setForeground(foreground);
     }
+
 
 
 //    // UI logic: intercept button on/off
