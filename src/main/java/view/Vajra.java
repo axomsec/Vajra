@@ -2,6 +2,7 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 /***
  * View: will handle the GUI components and layout.
@@ -65,16 +66,18 @@ public class Vajra extends JFrame  {
         interceptedRequest.setText(data);
     }
 
+    // clears the JTextArea for Interception on/off area.
+    public void clearInterceptedRequestArea(){
+        interceptedRequest.setText("");
+    }
 
-    // methods to update GUI
+
+    // methods to update GUI for button state
     public void setInterceptButtonState(String text, Color background, Color foreground){
         interceptButton.setText(text);
         interceptButton.setBackground(background);
         interceptButton.setForeground(foreground);
     }
-
-
-
 
 
 //    // UI logic: intercept button on/off

@@ -12,12 +12,18 @@ import utils.CertificateUtil;
 import view.Vajra;
 
 import javax.swing.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
 
+
+        final Lock interceptLock = new ReentrantLock();
+        final Condition interceptCondition = interceptLock.newCondition();
 
 
         CertificateUtil certificateUtil = new CertificateUtil();
@@ -38,7 +44,7 @@ public class Main {
 
             // create view and controller
             Vajra view = new Vajra();
-            VajraInterceptController controller = new VajraInterceptController(view);
+            VajraInterceptController controller = new VajraInterceptController(view, interceptLock, interceptCondition);
 
             javax.swing.SwingUtilities.invokeLater(() -> {
                 view.setVisible(true);
@@ -47,23 +53,15 @@ public class Main {
             HttpProxyServer server = DefaultHttpProxyServer.bootstrap()
                     .withPort(8080)
                     .withManInTheMiddle(mitmManager)
-                    .withFiltersSource(new InterceptingFilter(controller))
+                    .withFiltersSource(new InterceptingFilter(controller, interceptLock, interceptCondition))
                     .withAllowLocalOnly(false)
                     .withAuthenticateSslClients(false)
                     .start();
 
 
-
-
         } catch( Exception ex ) {
             System.err.println( "Failed to initialize LaF" );
         }
-
-
-
-
-
-
 
 
 
