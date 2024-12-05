@@ -5,6 +5,7 @@
       <xy x="5" y="5" width="700" height="700"/>
     </constraints>
     <properties>
+      <font name="JetBrains Mono" style="0"/>
       <minimumSize width="700" height="700"/>
       <preferredSize width="700" height="700"/>
     </properties>
@@ -23,7 +24,14 @@
             </constraints>
             <properties/>
             <border type="none"/>
-            <children/>
+            <children>
+              <component id="f6759" class="javax.swing.JPasswordField" binding="passwordField1" default-binding="true">
+                <constraints>
+                  <card name="Card1"/>
+                </constraints>
+                <properties/>
+              </component>
+            </children>
           </grid>
           <tabbedpane id="77a89" binding="vajraProxy">
             <constraints>
