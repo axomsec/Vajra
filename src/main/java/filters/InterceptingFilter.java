@@ -42,8 +42,6 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
             @Override
             public HttpResponse clientToProxyRequest(HttpObject httpObject) {
                 if (httpObject instanceof FullHttpRequest) {
-
-
                     String interceptedData = RequestInterceptorHandler.handleRequest((FullHttpRequest) httpObject);
 
                     if(vajraInterceptController.getInterceptionStatus()){

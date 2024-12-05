@@ -69,6 +69,7 @@ public class VajraInterceptController implements ActionListener{
 
     @Override
     public void actionPerformed(ActionEvent e) {
+
             String command = e.getActionCommand();
 
             System.out.println(command);
@@ -90,7 +91,6 @@ public class VajraInterceptController implements ActionListener{
 
     private void handleInterceptButton(){
         String currentText = view.getInterceptButton().getText();
-
 
         if(INTERCEPT_OFF.equals(currentText)){
             view.setInterceptButtonState(INTERCEPT_ON, Color.decode("#01307a"), Color.decode("#ffffff"));
