@@ -31,6 +31,7 @@ public class VajraInterceptController implements ActionListener{
     private static final String INTERCEPT_ON = "Intercept on";
 
     private boolean isIntercepting = false;
+    private boolean isFowardButtonClicked = false;
 
     private final List<InterceptingFilter> activeFilters = new ArrayList<InterceptingFilter>();
 
@@ -63,6 +64,17 @@ public class VajraInterceptController implements ActionListener{
     public boolean getInterceptionStatus(){
         return isIntercepting;
     }
+    public void setInterceptionStatus(boolean status){
+        this.isIntercepting = status;
+    }
+
+
+
+    public boolean getFowardButtonClickedStatus(){
+        return isFowardButtonClicked;
+    }
+
+
 
     public void updateRequestText(String interceptedData){
         view.setInterceptedRequest(interceptedData);
@@ -81,6 +93,7 @@ public class VajraInterceptController implements ActionListener{
                     break;
                 case "Forward":
                     System.out.println("will call handleForwardButton()");
+                    handleFowardButton();
                     break;
                 case "Drop":
                     System.out.println("will call handleDropButton()");
@@ -122,6 +135,22 @@ public class VajraInterceptController implements ActionListener{
 
     private void handleFowardButton(){
         System.out.println("forward button clicked.");
+
+        String getInterceptedRequest = view.getInterceptedRequest();
+        System.out.println(getInterceptedRequest);
+
+        interceptLock.lock();
+        try{
+            this.isIntercepting = false;
+            interceptCondition.signal();
+        }finally{
+            interceptLock.unlock();
+        }
+
+        System.out.println("request forwarded");
+//        this.isIntercepting = true;
+
+
     }
 
     private void handleDropButton(){

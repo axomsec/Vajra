@@ -44,17 +44,28 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                 if (httpObject instanceof FullHttpRequest) {
                     String interceptedData = RequestInterceptorHandler.handleRequest((FullHttpRequest) httpObject);
 
+
+
                     if(vajraInterceptController.getInterceptionStatus()){
                         interceptLock.lock();
                         try{
-                            // passing the intercepted data to the controller.
-                            vajraInterceptController.updateRequestText(interceptedData);
+
 
                             // wait until interception is toggled OFF.
                             while(vajraInterceptController.getInterceptionStatus()){
+                                // passing the intercepted data to the controller.
+                                vajraInterceptController.updateRequestText(interceptedData);
                                 interceptCondition.await();
                             }
 
+                            vajraInterceptController.setInterceptionStatus(true);
+
+                            System.out.println("getFowardButtonClickedStatus: " +  vajraInterceptController.getFowardButtonClickedStatus());
+                            System.out.println("getInterceptionStatus: " + vajraInterceptController.getInterceptionStatus());
+
+                            if(vajraInterceptController.getFowardButtonClickedStatus()){
+
+                            }
                             System.out.println("Interception is turned OFF, forwarding requests.");
 
                         }catch (Exception e){
