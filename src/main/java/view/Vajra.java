@@ -2,8 +2,8 @@ package view;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.util.List;
 
 /***
  * View: will handle the GUI components and layout.
@@ -29,8 +29,29 @@ public class Vajra extends JFrame  {
 
     private JButton forwardButton;
     private JButton dropButton;
-    private JPasswordField passwordField1;
+    private JTextArea httpHistoryRequestTextArea;
+    private JTextArea httpHistoryResponseTextArea;
+
+
     // --> end: proxy
+
+
+    // --> start: http history
+
+
+
+    // ------ history table  ------- //
+    private JTable httpHistoryTable;
+    // ------ history table  ------- //
+
+
+    // ----- Request & Response Panes ----- //
+
+
+
+
+    // --> end: http history
+
 
 
     // Menus
@@ -79,23 +100,36 @@ public class Vajra extends JFrame  {
         interceptedRequest.setLineWrap(true);
         interceptedRequest.setWrapStyleWord(true);
 
-//        JScrollPane scrollPane = new JScrollPane(interceptedRequest);
-//        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-//        scrollPane.setVerticalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+        /***
+         * HTTP History UI Changes
+         */
+
+//        String data[][] = {
+//                {"1", "https://google.com", "POST", "/feed/", "x", "", "200", "7263", "text", "txt", "Example title", "x", "127.0.0.1", "09:55:23", "8080"}
+//        };
+
+        String[] column = {"#", "Host", "Method", "URL", "Params", "Edited", "Status code", "Length", "MIME Type", "Extension", "title", "TLS", "IP", "Time", "Listener Port"};
+        Object[][] data = {
+                {1, "example.com", "GET", "http://example.com/home", "id=123", false, 200, 1024, "text/html", "html", "Home Page", true, "93.184.216.34", "2024-12-07 10:00:00", 8080},
+                {2, "testsite.com", "POST", "https://testsite.com/login", "username=admin&password=1234", true, 302, 512, "application/json", "json", "Login Redirect", true, "192.168.1.1", "2024-12-07 10:05:00", 443},
+                {3, "myapi.com", "PUT", "https://myapi.com/update", "item=45&value=on", true, 204, 0, "application/json", "json", "", true, "172.217.0.0", "2024-12-07 10:10:00", 80},
+                {4, "secure-site.com", "DELETE", "https://secure-site.com/remove", "token=abcdef123456", false, 401, 256, "text/plain", "txt", "Unauthorized", true, "8.8.8.8", "2024-12-07 10:15:00", 8443},
+                {5, "example.org", "GET", "http://example.org/contact", "", false, 404, 512, "text/html", "html", "Not Found", false, "93.184.216.35", "2024-12-07 10:20:00", 8080}
+        };
 
 
 
-        // UI Changes specific to Intercept, Forward, Drop Buttons
+        DefaultTableModel tableModel = new DefaultTableModel(data, column);
+        httpHistoryTable.setModel(tableModel);
 
-        // Intercept button
-//        interceptButton.setPreferredSize(new Dimension(100, 2));
-//        interceptButton.setMinimumSize(new Dimension(2,2));
-//        interceptButton.setMaximumSize(new Dimension(2,2));
+//        Object[] rowData = {1, "haxx ", 25};
+//        tableModel.addRow(rowData);
 
-        // Forward button
-//        forwardButton.setPreferredSize(new Dimension(2, 2));
-//        forwardButton.setMinimumSize(new Dimension(2,2));
-//        forwardButton.setMaximumSize(new Dimension(2,2));
+
+//        httpHistoryTable = new JTable(data, column);
+//        httpHistoryScrollPane = new JScrollPane(httpHistoryTable);
+
 
 
         setPreferredSize(new Dimension(1024, 900));
@@ -163,6 +197,7 @@ public class Vajra extends JFrame  {
         Image image = icon.getImage();
         return image;
     }
+
 
 
 //    // UI logic: intercept button on/off

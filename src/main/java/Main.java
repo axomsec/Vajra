@@ -8,6 +8,8 @@ import net.lightbody.bmp.mitm.PemFileCertificateSource;
 import org.littleshoot.proxy.HttpProxyServer;
 
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.CertificateUtil;
 import view.Vajra;
 
@@ -18,6 +20,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 public class Main {
+
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) throws Exception {
 
@@ -60,6 +64,7 @@ public class Main {
 
 
         } catch( Exception ex ) {
+            System.out.println(ex);
             System.err.println( "Failed to initialize LaF" );
         }
 
