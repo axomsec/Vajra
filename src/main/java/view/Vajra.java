@@ -1,5 +1,7 @@
 package view;
 
+import view.settings.SettingsProxyPanel;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -60,6 +62,8 @@ public class Vajra extends JFrame  {
     JMenuItem mainMenuExit;
 
 
+    private SettingsProxyPanel settingsProxyPanelView;
+
     //constructor
     public Vajra()  {
 
@@ -76,8 +80,6 @@ public class Vajra extends JFrame  {
          */
         JMenuBar menuBar = new JMenuBar();
 
-        // set menu bar icon
-//        setVajraIcon(menuBar);
 
         // menus
         mainMenu = new JMenu("Vajra");
@@ -105,9 +107,6 @@ public class Vajra extends JFrame  {
          * HTTP History UI Changes
          */
 
-//        String data[][] = {
-//                {"1", "https://google.com", "POST", "/feed/", "x", "", "200", "7263", "text", "txt", "Example title", "x", "127.0.0.1", "09:55:23", "8080"}
-//        };
 
         String[] column = {"#", "Host", "Method", "URL", "Params", "Edited", "Status code", "Length", "MIME Type", "Extension", "title", "TLS", "IP", "Time", "Listener Port"};
         Object[][] data = {
@@ -119,21 +118,11 @@ public class Vajra extends JFrame  {
         };
 
 
-
         DefaultTableModel tableModel = new DefaultTableModel(data, column);
         httpHistoryTable.setModel(tableModel);
 
-//        Object[] rowData = {1, "haxx ", 25};
-//        tableModel.addRow(rowData);
 
-
-//        httpHistoryTable = new JTable(data, column);
-//        httpHistoryScrollPane = new JScrollPane(httpHistoryTable);
-
-
-
-        setPreferredSize(new Dimension(1024, 900));
-
+        setSize(1024, 900);
         setVisible(true);
     }
 
@@ -163,6 +152,11 @@ public class Vajra extends JFrame  {
         interceptedRequest.setText("");
     }
 
+    // getters - menu items
+    public JMenuItem getSettingsMenuItemClick(){
+        return mainMenuSettings;
+    }
+
 
     // methods to update GUI for button state
     public void setInterceptButtonState(String text, Color background, Color foreground){
@@ -175,20 +169,6 @@ public class Vajra extends JFrame  {
         menuBar.add(menu).add(menuItem);
     }
 
-    public void setVajraIcon(JMenuBar menuBar){
-        // set icon
-        // Create a custom JLabel with an icon
-        ImageIcon originalIcon = new ImageIcon("./src/main/java/resources/letter-v.png"); // Replace with your icon path
-        Image resizedImage = originalIcon.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH);
-        ImageIcon resizedIcon = new ImageIcon(resizedImage);
-
-        // Create a JLabel with the resized icon
-        JLabel iconLabel = new JLabel(resizedIcon);
-        iconLabel.setBorder(new EmptyBorder(5, 0, 5, 5));
-
-        menuBar.add(iconLabel);
-    }
-
     public Image setTaskbarIcon(){
         // Load the custom icon
         // Replace with your icon file path
@@ -197,36 +177,6 @@ public class Vajra extends JFrame  {
         Image image = icon.getImage();
         return image;
     }
-
-
-
-//    // UI logic: intercept button on/off
-//    private void interceptButtonAction(){
-//        Color onColorButton = Color.decode("#01307a");
-//        Color onTextColor = Color.decode("#ffffff");
-//
-//        Color offColorButton = Color.decode("#ffffff");
-//        Color offTextColor = Color.decode("#000000");
-//
-//        if(interceptButton.getText().equals(INTERCEPT_OFF)){
-//            interceptButton.setText(INTERCEPT_ON);
-//            interceptButton.setBackground(onColorButton);
-//            interceptButton.setForeground(onTextColor);
-//        }else{
-//            interceptButton.setText(INTERCEPT_OFF);
-//            interceptButton.setBackground(offColorButton);
-//            interceptButton.setForeground(offTextColor);
-//        }
-//    }
-//
-//    // actions
-//    @Override
-//    public void actionPerformed(ActionEvent e) {
-//        if(e.getSource() == interceptButton){
-//            System.out.println("clicked --> " + interceptButton.getText());
-//            interceptButtonAction();
-//        }
-//    }
 
 
 }

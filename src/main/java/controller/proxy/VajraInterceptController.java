@@ -43,7 +43,6 @@ public class VajraInterceptController implements ActionListener{
         this.model = new RequestModel();
 
 
-
         // does initialization for listeners
         initController();
     }
