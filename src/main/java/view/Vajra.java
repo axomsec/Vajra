@@ -1,9 +1,9 @@
 package view;
 
+
 import view.settings.SettingsProxyPanel;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 
@@ -31,14 +31,27 @@ public class Vajra extends JFrame  {
 
     private JButton forwardButton;
     private JButton dropButton;
-    private JTextArea httpHistoryRequestTextArea;
-    private JTextArea httpHistoryResponseTextArea;
+
 
 
     // --> end: proxy
 
 
     // --> start: http history
+
+
+    // getters for history table
+    public JTable getHttpHistoryTable() {
+        return httpHistoryTable;
+    }
+
+    public JPopupMenu getPopupMenu() {
+        return popupMenu;
+    }
+
+    public JMenuItem getSendToRepeaterItem() {
+        return sendToRepeaterItem;
+    }
 
 
 
@@ -48,11 +61,43 @@ public class Vajra extends JFrame  {
 
 
     // ----- Request & Response Panes ----- //
+    private JTextArea httpHistoryRequestTextArea;
+    private JTextArea httpHistoryResponseTextArea;
 
+    // ----- Request & Response Panes ----- //
+
+
+
+    // create the popup menu
+    // init has tobe done here for JPopupMenu else controller aint getting triggered.
+    JPopupMenu popupMenu = new JPopupMenu();
+    JMenuItem sendToRepeaterItem = new JMenuItem("Send to Repeater");
 
 
 
     // --> end: http history
+
+
+    // --> start repeater
+
+
+    // getters for repeater empty panel
+    public JPanel getRepeaterPanel() {
+        return repeaterPanel;
+    }
+
+    public JTabbedPane getRepeaterTabs() {
+        return repeaterTabs;
+    }
+
+    private JPanel repeaterPanel;
+    private JTabbedPane repeaterTabs;
+    private JButton sendButton;
+    private JButton cancelButton;
+    private JTextArea textArea1;
+    private JTextArea textArea2;
+
+    // --> end repeater
 
 
 
@@ -63,6 +108,9 @@ public class Vajra extends JFrame  {
 
 
     private SettingsProxyPanel settingsProxyPanelView;
+
+
+
 
     //constructor
     public Vajra()  {
@@ -107,6 +155,11 @@ public class Vajra extends JFrame  {
          * HTTP History UI Changes
          */
 
+        // add the menu item to popup menu.
+
+        popupMenu.add(sendToRepeaterItem);
+
+
 
         String[] column = {"#", "Host", "Method", "URL", "Params", "Edited", "Status code", "Length", "MIME Type", "Extension", "title", "TLS", "IP", "Time", "Listener Port"};
         Object[][] data = {
@@ -119,6 +172,8 @@ public class Vajra extends JFrame  {
 
 
         DefaultTableModel tableModel = new DefaultTableModel(data, column);
+
+
         httpHistoryTable.setModel(tableModel);
 
 
@@ -176,6 +231,13 @@ public class Vajra extends JFrame  {
         // Get the Image object from the icon
         Image image = icon.getImage();
         return image;
+    }
+
+    // will move this to controller
+    // this is only for testing!
+    private static void sendToRepeater(String requestDetails) {
+        // Logic to send the request to the Repeater tab/component
+        System.out.println("Sending to Repeater: " + requestDetails);
     }
 
 

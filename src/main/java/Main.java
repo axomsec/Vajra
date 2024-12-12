@@ -1,5 +1,7 @@
 import com.formdev.flatlaf.FlatIntelliJLaf;
+import controller.history.VajraHistoryController;
 import controller.proxy.VajraInterceptController;
+import controller.repeater.VajraRepeaterController;
 import controller.settings.VajraSettingsController;
 import filters.InterceptingFilter;
 
@@ -88,12 +90,18 @@ public class Main {
             // create view and controller for Main Window
             Vajra view = new Vajra();
             VajraInterceptController controller = new VajraInterceptController(view, interceptLock, interceptCondition);
+            VajraHistoryController vajraHistoryController = new VajraHistoryController(view, view.getHttpHistoryTable(), view.getSendToRepeaterItem());
 
             // create view and controller for settings Main Window
             SettingsPage settingsPageView = new SettingsPage();
             //  init view and controller for settings > proxy page
             SettingsProxyPanel settingsProxyPanelView = new SettingsProxyPanel();
             VajraSettingsController vajraSettingsController = new VajraSettingsController(view, settingsPageView);
+
+            // init controllers for repeater
+            VajraRepeaterController vajraRepeaterController = new VajraRepeaterController(view);
+
+
 
 
 
