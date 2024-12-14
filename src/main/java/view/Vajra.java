@@ -110,8 +110,6 @@ public class Vajra extends JFrame  {
     private SettingsProxyPanel settingsProxyPanelView;
 
 
-
-
     //constructor
     public Vajra()  {
 

@@ -9,6 +9,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -22,8 +24,6 @@ public class VajraInterceptController implements ActionListener{
     private final Vajra view;
     private RequestModel model;
 
-
-
     final Lock interceptLock;
     final Condition interceptCondition;
 
@@ -32,7 +32,7 @@ public class VajraInterceptController implements ActionListener{
 
     private boolean isIntercepting = false;
 
-    private final List<InterceptingFilter> activeFilters = new ArrayList<InterceptingFilter>();
+    private final LinkedBlockingDeque<String> interceptedRequests = new LinkedBlockingDeque<>(1);
 
 
     public VajraInterceptController(Vajra view, Lock interceptLock, Condition interceptCondition) {
@@ -62,6 +62,11 @@ public class VajraInterceptController implements ActionListener{
     public boolean getInterceptionStatus(){
         return isIntercepting;
     }
+
+    public void setInterceptionStatus(boolean status){
+        isIntercepting = status;
+    }
+
 
     public void updateRequestText(String interceptedData){
         view.setInterceptedRequest(interceptedData);
@@ -99,6 +104,7 @@ public class VajraInterceptController implements ActionListener{
             // requests here will be held, the logic is being implemented in InterceptingFilter class.
             // all requests will be waiting because of the interceptCondition.await();
             System.out.println("Interception ON: Requests will be held.");
+
         }else{
             view.setInterceptButtonState(INTERCEPT_OFF, Color.decode("#ffffff"), Color.decode("#000000"));
             this.isIntercepting = false;
