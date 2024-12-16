@@ -80,7 +80,6 @@ public class HttpHighLighter {
 
     public static String createStyledHttpView(String httpRequest, JTextPane textPane) {
 
-        textPane.setEditorKit(new WrapEditorKit());
 
         StyledDocument doc = textPane.getStyledDocument();
 
@@ -110,7 +109,7 @@ public class HttpHighLighter {
 
         // Body key style
         Style bodyKeyStyle = doc.addStyle("bodyKey", defaultStyle);
-        StyleConstants.setForeground(bodyKeyStyle, Color.BLUE);
+        StyleConstants.setForeground(bodyKeyStyle, new Color(0, 0, 170));
 
         // Body value style
         Style bodyValueStyle = doc.addStyle("bodyValue", defaultStyle);
@@ -329,63 +328,4 @@ public class HttpHighLighter {
         return sb.toString();
     }
 
-
-    // Custom EditorKit that wraps text
-    static class WrapEditorKit extends StyledEditorKit {
-        private ViewFactory defaultFactory = new WrapColumnFactory();
-
-        @Override
-        public ViewFactory getViewFactory() {
-            return defaultFactory;
-        }
-    }
-
-    // A factory that creates wrap views
-    static class WrapColumnFactory implements ViewFactory {
-        @Override
-        public View create(Element elem) {
-            String kind = elem.getName();
-            if (kind != null) {
-                if (kind.equals(AbstractDocument.ContentElementName)) {
-                    return new WrapLabelView(elem);
-                } else if (kind.equals(AbstractDocument.ParagraphElementName)) {
-                    return new ParagraphView(elem) {
-                        @Override
-                        public void layout(int width, int height) {
-                            super.layout(Integer.MAX_VALUE, height);
-                        }
-
-                        @Override
-                        public float getMinimumSpan(int axis) {
-                            return super.getPreferredSpan(axis);
-                        }
-                    };
-                } else if (kind.equals(AbstractDocument.SectionElementName)) {
-                    return new BoxView(elem, View.Y_AXIS);
-                } else if (kind.equals(StyleConstants.ComponentElementName)) {
-                    return new ComponentView(elem);
-                } else if (kind.equals(StyleConstants.IconElementName)) {
-                    return new IconView(elem);
-                }
-            }
-            return new LabelView(elem);
-        }
-    }
-
-    // A label view that wraps lines
-    static class WrapLabelView extends LabelView {
-        public WrapLabelView(Element elem) {
-            super(elem);
-        }
-
-        @Override
-        public float getMinimumSpan(int axis) {
-            switch (axis) {
-                case View.X_AXIS:
-                    return 0;
-                default:
-                    return super.getMinimumSpan(axis);
-            }
-        }
-    }
 }

@@ -118,12 +118,19 @@ public class Vajra extends JFrame  {
     //constructor
     public Vajra()  {
 
+
+//        interceptedRequest.setSize(new Dimension(300, 200));
+//        interceptedRequest.setEditorKit(new WrapEditorKit());
+
+
+
         setContentPane(MainPane);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(700, 900);
 
         // Set the icon for the frame (this affects the taskbar icon)
         setIconImage(setTaskbarIcon());
+
 
         /***
          * Main Menu UI
@@ -279,6 +286,61 @@ public class Vajra extends JFrame  {
     }
 
 
+    // Custom EditorKit that supports wrapping
+    static class WrapEditorKit extends StyledEditorKit {
+        private ViewFactory defaultFactory = new WrapColumnFactory();
+
+        @Override
+        public ViewFactory getViewFactory() {
+            return defaultFactory;
+        }
+    }
+
+    // A ViewFactory that creates wrap-capable views
+    static class WrapColumnFactory implements ViewFactory {
+        @Override
+        public View create(Element elem) {
+            String kind = elem.getName();
+            if (kind != null) {
+                switch (kind) {
+                    case AbstractDocument.ContentElementName:
+                        return new WrapLabelView(elem);
+                    case AbstractDocument.ParagraphElementName:
+                        return new ParagraphView(elem) {
+                            @Override
+                            public void layout(int width, int height) {
+                                super.layout(Integer.MAX_VALUE, height);
+                            }
+                            @Override
+                            public float getMinimumSpan(int axis) {
+                                return super.getPreferredSpan(axis);
+                            }
+                        };
+                    case AbstractDocument.SectionElementName:
+                        return new BoxView(elem, View.Y_AXIS);
+                    case StyleConstants.ComponentElementName:
+                        return new ComponentView(elem);
+                    case StyleConstants.IconElementName:
+                        return new IconView(elem);
+                }
+            }
+            return new LabelView(elem);
+        }
+    }
+
+    // A LabelView that can wrap text
+    static class WrapLabelView extends LabelView {
+        public WrapLabelView(Element elem) {
+            super(elem);
+        }
+        @Override
+        public float getMinimumSpan(int axis) {
+            if (axis == View.X_AXIS) {
+                return 0;
+            }
+            return super.getMinimumSpan(axis);
+        }
+    }
 
 
 }

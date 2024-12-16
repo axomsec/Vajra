@@ -91,25 +91,32 @@
                       <text value="Drop"/>
                     </properties>
                   </component>
-                  <scrollpane id="c50e3">
+                  <grid id="c8da0" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
                     <constraints>
-                      <grid row="2" column="0" row-span="1" col-span="9" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                      <grid row="2" column="0" row-span="1" col-span="9" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                       <gridbag weightx="1.0" weighty="1.0"/>
                     </constraints>
-                    <properties>
-                      <opaque value="true"/>
-                      <preferredSize width="500" height="300"/>
-                    </properties>
+                    <properties/>
                     <border type="none"/>
                     <children>
-                      <component id="fe7c5" class="javax.swing.JTextPane" binding="interceptedRequest">
-                        <constraints/>
-                        <properties>
-                          <font name="Consolas" size="14" style="0"/>
-                        </properties>
-                      </component>
+                      <scrollpane id="cc5e7">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                            <preferred-size width="100" height="100"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <component id="e5646" class="javax.swing.JTextPane" binding="interceptedRequest">
+                            <constraints/>
+                            <properties/>
+                          </component>
+                        </children>
+                      </scrollpane>
                     </children>
-                  </scrollpane>
+                  </grid>
                 </children>
               </grid>
               <grid id="bfcc3" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
