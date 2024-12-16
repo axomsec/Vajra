@@ -5,6 +5,7 @@ import view.settings.SettingsProxyPanel;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.*;
 import java.awt.*;
 
 /***
@@ -22,7 +23,10 @@ public class Vajra extends JFrame  {
 
     // intercept tab
     private JPanel interceptPane;
-    private JTextArea interceptedRequest;
+//    private JTextArea interceptedRequest;
+//    private JEditorPane interceptedRequest;
+    private JTextPane interceptedRequest;
+
 
     private JButton interceptButton;
     private String INTERCEPT_OFF    = "Intercept off";
@@ -97,6 +101,7 @@ public class Vajra extends JFrame  {
     private JTextArea textArea1;
     private JTextArea textArea2;
 
+
     // --> end repeater
 
 
@@ -143,10 +148,33 @@ public class Vajra extends JFrame  {
          * Interception Related UI Changes
          */
 
-        // UI changes specific to  JTextArea
+        // UI changes specific to JTextPane
         // line wrapping
-        interceptedRequest.setLineWrap(true);
-        interceptedRequest.setWrapStyleWord(true);
+//        StyledDocument document = interceptedRequest.getStyledDocument();
+//        Style defaultStyle = StyleContext.getDefaultStyleContext().getStyle(StyleContext.DEFAULT_STYLE);
+//        Style requestLineStyle = document.addStyle("requestLine", defaultStyle);
+//        StyleConstants.setBold(requestLineStyle, true);
+//        StyleConstants.setForeground(requestLineStyle, new Color(0x00, 0x88, 0x88)); // teal
+//
+//        // Header key style
+//        Style headerKeyStyle = document.addStyle("headerKey", defaultStyle);
+//        StyleConstants.setBold(headerKeyStyle, true);
+//        StyleConstants.setForeground(headerKeyStyle, new Color(0x80, 0x00, 0x80)); // purple
+//
+//        // Header value style
+//        Style headerValueStyle = document.addStyle("headerValue", defaultStyle);
+//        StyleConstants.setForeground(headerValueStyle, new Color(0x00, 0x60, 0x00)); // dark green
+//
+//        // Body style
+//        Style bodyStyle = document.addStyle("body", defaultStyle);
+//        // Slightly darker gray for body
+//        StyleConstants.setForeground(bodyStyle, new Color(0x33, 0x33, 0x33));
+
+
+//        interceptedRequest.setWrao(true);
+//        interceptedRequest.setWrapStyleWord(true);
+
+//        interceptedRequest.setEditorKit(new WrapEditorKit());
 
 
         /***
@@ -179,6 +207,17 @@ public class Vajra extends JFrame  {
         setVisible(true);
     }
 
+    // methods related to color scheme.
+    private void insertRequestLine(StyledDocument document, String requestLine) {
+        // requestLine might look like: "POST /api-2.0/auth/code-generation/login/4.0/ HTTP/2"
+        Style requestLineStyle = document.getStyle("requestLine");
+        try {
+            document.insertString(document.getLength(), requestLine + "\n", requestLineStyle);
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }
+    }
+
     // Getters for GUI components
     public JButton getInterceptButton(){
         return interceptButton;
@@ -192,7 +231,7 @@ public class Vajra extends JFrame  {
         return dropButton;
     }
 
-    public JTextArea getInterceptedRequestJTextArea(){
+    public JTextPane getInterceptedRequestJTextPane(){
         return interceptedRequest;
     }
 
@@ -238,6 +277,8 @@ public class Vajra extends JFrame  {
         // Logic to send the request to the Repeater tab/component
         System.out.println("Sending to Repeater: " + requestDetails);
     }
+
+
 
 
 }

@@ -96,16 +96,16 @@
                       <grid row="2" column="0" row-span="1" col-span="9" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                       <gridbag weightx="1.0" weighty="1.0"/>
                     </constraints>
-                    <properties/>
+                    <properties>
+                      <opaque value="true"/>
+                      <preferredSize width="500" height="300"/>
+                    </properties>
                     <border type="none"/>
                     <children>
-                      <component id="73a77" class="javax.swing.JTextArea" binding="interceptedRequest">
+                      <component id="fe7c5" class="javax.swing.JTextPane" binding="interceptedRequest">
                         <constraints/>
                         <properties>
-                          <alignmentY value="0.8"/>
-                          <font name="JetBrains Mono" size="14" style="0"/>
-                          <lineWrap value="true"/>
-                          <wrapStyleWord value="true"/>
+                          <font name="Consolas" size="14" style="0"/>
                         </properties>
                       </component>
                     </children>

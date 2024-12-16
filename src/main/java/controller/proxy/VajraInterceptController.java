@@ -1,6 +1,7 @@
 package controller.proxy;
 
 
+import httphighlighter.HttpHighLighter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -87,8 +88,8 @@ public class VajraInterceptController implements ActionListener{
         view.setInterceptedRequest(interceptedData);
     }
 
-    public JTextArea getInterceptTextArea(){
-        return view.getInterceptedRequestJTextArea();
+    public JTextPane getInterceptTextPane(){
+        return view.getInterceptedRequestJTextPane();
     }
 
     @Override

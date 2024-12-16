@@ -5,12 +5,14 @@ package filters;
 import controller.proxy.VajraInterceptController;
 import handlers.RequestInterceptorHandler;
 import handlers.ResponseInterceptorHandler;
+import httphighlighter.HttpHighLighter;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import org.bouncycastle.cert.ocsp.Req;
 import org.littleshoot.proxy.HttpFiltersAdapter;
 import org.littleshoot.proxy.HttpFiltersSourceAdapter;
 
+import javax.swing.*;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.concurrent.*;
@@ -75,7 +77,9 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                     System.out.println("finalHttpRequestString: " + interceptedData);
 
 
+
                     if (vajraInterceptController.getInterceptionStatus()) {
+
                         interceptLock.lock();
                         try {
                             // Ignore CONNECT requests for UI update, just pass them through
@@ -87,7 +91,14 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                             // update UI with its data.
                             if (firstInterceptedRequest == null && rqx.method() != HttpMethod.CONNECT) {
                                 firstInterceptedRequest = interceptedData;
-                                vajraInterceptController.updateRequestText(firstInterceptedRequest);
+
+                                // Get the JTextPane from your controller (you need a method for this).
+                                JTextPane interceptPane = vajraInterceptController.getInterceptTextPane();
+
+                                // Apply syntax highlighting
+                                HttpHighLighter.createStyledHttpView(firstInterceptedRequest, interceptPane);
+
+//                                vajraInterceptController.updateRequestText(firstInterceptedRequest);
                             }
 
                             // Wait while interception is ON and not forwarding
@@ -103,7 +114,7 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                                 vajraInterceptController.setFowarding(false);
 
                                 // Convert the edited request text from UI back into FullHttpRequest
-                                modifiedRequest = vajraInterceptController.getInterceptTextArea().getText();
+                                modifiedRequest = vajraInterceptController.getInterceptTextPane().getText();
 
                                 FullHttpRequest parsedData = requestInterceptorHandler.parseModifiedRequestToFullHttpRequest(modifiedRequest);
                                 RequestInterceptorHandler.InterceptedRequestData parseModifiedData = RequestInterceptorHandler.handleRequest(parsedData);
@@ -135,17 +146,11 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                                 // Clear UI text or set it to something else if needed
                                 vajraInterceptController.updateRequestText("khali");
 
-                                if (vajraInterceptController.getInterceptTextArea().getText().equalsIgnoreCase("khali")) {
-                                    // Return the original request unmodified (if you have it).
-                                    return null;
-                                }
-
-
                                 // Return null to continue pipeline
                                 // We can substitute the modified request in proxyToServerRequest()
                                 // but are not doing it currently, if faced any issues we will do it later
                                 // or we will take it in the refactoring iteration.
-
+                                return null;
                             }
 
                         } catch (InterruptedException e) {
