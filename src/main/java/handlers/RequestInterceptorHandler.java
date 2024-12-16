@@ -1,67 +1,164 @@
 package handlers;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
+import io.netty.util.internal.shaded.org.jctools.queues.MessagePassingQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.LoggerUtil;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class RequestInterceptorHandler {
 
-    public static String handleRequest(FullHttpRequest request) {
-        StringBuilder interceptedData = new StringBuilder();
 
-        // Format request line
-        interceptedData.append(request.method())
-                .append(" ")
-                .append(request.uri())
-                .append(" ")
-                .append(request.protocolVersion())
-                .append("\n");
+    private static final Logger log = LoggerFactory.getLogger(RequestInterceptorHandler.class);
+    private FullHttpRequest request;
 
-        // Format headers
+
+    public static class InterceptedRequestData {
+        private final String requestLine;
+        private final LinkedHashMap<String, String> headers;
+        private final String body;
+
+
+
+        public InterceptedRequestData(String requestLine, LinkedHashMap<String, String> headers, String body) {
+            this.requestLine = requestLine;
+            this.headers = headers;
+            this.body = body;
+        }
+
+        public String getRequestLine() {
+            return requestLine;
+        }
+
+        public LinkedHashMap<String, String> getHeaders() {
+            return headers;
+        }
+
+        public String getBody() {
+            return body;
+        }
+    }
+
+    /***
+     * @param request
+     * @return InterceptedRequestData(requestLine, headers, body)
+     * handleRequest takes a FullHttpRequest request as an argument which then segregates 3 parts of the request
+     * and returns it, which involves
+     *      1. requestLine(itself contains 3 more parts concatenated together)
+     *          * HTTP method, HTTP URI & HTTP protocol version
+     *      2. headers
+     *      3. body
+     * This method helps you develop formatted structure for the consumer to play with yet having more control
+     * to the output.
+     */
+
+    public static InterceptedRequestData handleRequest(FullHttpRequest request) {
+        // Extract request line: "METHOD URI PROTOCOL"
+        String requestLine = request.method() + " " + request.uri() + " " + request.protocolVersion();
+
+        // Extract headers in order
+        LinkedHashMap<String, String> headers = new LinkedHashMap<>();
         for (Map.Entry<String, String> header : request.headers()) {
-            interceptedData.append(header.getKey())
-                    .append(": ")
-                    .append(header.getValue())
-                    .append("\n");
+            headers.put(header.getKey(), header.getValue());
         }
 
-        // Add a separating newline between headers and body
-        interceptedData.append("\n");
+        // Extract body (raw)
+        String body = "";
+        if (request.content().isReadable()) {
+            body = request.content().toString(CharsetUtil.UTF_8);
+        }
 
-        // Print body if it's a POST request or contains data
-        if (request.method().name().equals("POST") || request.content().isReadable()) {
-            String contentType = request.headers().get(HttpHeaderNames.CONTENT_TYPE);
-            String body = request.content().toString(CharsetUtil.UTF_8);
+        // No logging or formatting here, just return the structured data
+        return new InterceptedRequestData(requestLine, headers, body);
+    }
 
-            // Handle URL-encoded form data
-            if ("application/x-www-form-urlencoded".equals(contentType)) {
-                Map<String, String> postParams = decodeFormData(body);
-                interceptedData.append("Body (Form Data):\n");
-                postParams.forEach((key, value) ->
-                        interceptedData.append(key).append("=").append(value).append("\n"));
+
+    /**
+     * @param modifiedRequestData
+     * @return (FullHttpRequest) request
+     *
+     * @description This method creates back a modified FullHttpRequest and returns it, the modified data is constantly
+     * from JTextArea of the Intercept tab.
+     *
+     * @cons If any extra headers data is being added to the requests, this method is not capable of parsing it at the
+     * moment. This needs to be addressed later for headers.
+     *      1. addition
+     *      2. manipulation
+     *      3. deletion.
+     */
+    public FullHttpRequest parseModifiedRequestToFullHttpRequest(String modifiedRequestData) {
+        // Split into lines
+        String[] lines = modifiedRequestData.split("\n");
+        if (lines.length == 0) {
+            // If no data, return a basic empty GET request to / as a fallback
+            return new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/");
+        }
+
+        // Parse request line
+        String requestLine = lines[0].trim();
+        String[] requestLineParts = requestLine.split(" ");
+        if (requestLineParts.length != 3) {
+            // Invalid request line format, fallback or throw error
+            throw new IllegalArgumentException("Invalid request line: " + requestLine);
+        }
+
+        HttpMethod method = HttpMethod.valueOf(requestLineParts[0]);
+        String uri = requestLineParts[1];
+        HttpVersion version = HttpVersion.valueOf(requestLineParts[2]);
+
+        // Parse headers
+        LinkedHashMap<String, String> headers = new LinkedHashMap<>();
+        int i = 1;
+        for (; i < lines.length; i++) {
+            String line = lines[i].trim();
+            if (line.isEmpty()) {
+                // blank line indicates the start of the body
+                break;
             }
-            // Handle JSON data
-            else if ("application/json".equals(contentType)) {
-                interceptedData.append("Body (JSON):\n")
-                        .append(body)
-                        .append("\n");
-            }
-            // Default: show raw body
-            else {
-                interceptedData.append("Body:\n")
-                        .append(body)
-                        .append("\n");
+            int colonIndex = line.indexOf(':');
+            if (colonIndex != -1) {
+                String headerName = line.substring(0, colonIndex).trim();
+                String headerValue = line.substring(colonIndex + 1).trim();
+                headers.put(headerName, headerValue);
             }
         }
 
-        // Log the formatted intercepted data
-        LoggerUtil.log("Intercepted Request:\n" + interceptedData.toString());
-        return interceptedData.toString();
+        // Parse body
+        StringBuilder bodyBuilder = new StringBuilder();
+        for (i = i + 1; i < lines.length; i++) {
+            bodyBuilder.append(lines[i]).append("\n");
+        }
+        String body = bodyBuilder.toString().trim();
+
+        // Create the FullHttpRequest
+        ByteBuf content = Unpooled.EMPTY_BUFFER;
+        if (!body.isEmpty()) {
+            content = Unpooled.copiedBuffer(body, CharsetUtil.UTF_8);
+        }
+        FullHttpRequest request = new DefaultFullHttpRequest(version, method, uri, content);
+
+        // Set headers
+        for (String headerName : headers.keySet()) {
+            request.headers().set(headerName, headers.get(headerName));
+        }
+
+        // Update Content-Length if body is present
+        if (!body.isEmpty()) {
+            request.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
+        } else {
+            request.headers().remove(HttpHeaderNames.CONTENT_LENGTH);
+        }
+
+        return request;
     }
 
 
@@ -83,44 +180,5 @@ public class RequestInterceptorHandler {
         }
         return formData;
     }
-
-    public static FullHttpRequest parseModifiedRequest(String modifiedRequest) {
-        try {
-            String[] sections = modifiedRequest.split("\n\n", 2); // Split into headers and body
-            String[] lines = sections[0].split("\n");
-
-            // Parse the request line
-            String[] requestLine = lines[0].split(" ");
-            HttpMethod method = HttpMethod.valueOf(requestLine[0]);
-            String uri = requestLine[1];
-            HttpVersion version = HttpVersion.valueOf(requestLine[2]);
-
-            // Create a new FullHttpRequest
-            FullHttpRequest newRequest = new DefaultFullHttpRequest(version, method, uri);
-
-            // Parse headers
-            for (int i = 1; i < lines.length; i++) {
-                String line = lines[i];
-                if (line.contains(":")) {
-                    String[] headerParts = line.split(":", 2);
-                    newRequest.headers().set(headerParts[0].trim(), headerParts[1].trim());
-                }
-            }
-
-            // Parse body
-            if (sections.length > 1) {
-                String body = sections[1];
-                newRequest.content().clear().writeBytes(body.getBytes(CharsetUtil.UTF_8));
-                newRequest.headers().set(HttpHeaderNames.CONTENT_LENGTH, body.length());
-            }
-
-            System.out.println("parseModifiedRequest(): " + newRequest.headers() + "\n -- \n"  + newRequest.content());
-            return newRequest;
-        } catch (Exception e) {
-            LoggerUtil.log("Error parsing modified request: " + e.getMessage());
-            return null;
-        }
-    }
-
 
 }

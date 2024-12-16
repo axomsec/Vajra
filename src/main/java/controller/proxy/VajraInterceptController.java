@@ -1,15 +1,21 @@
 package controller.proxy;
 
-import filters.InterceptingFilter;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.util.CharsetUtil;
 import model.RequestModel;
 import view.Vajra;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
+
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -31,6 +37,12 @@ public class VajraInterceptController implements ActionListener{
     private static final String INTERCEPT_ON = "Intercept on";
 
     private boolean isIntercepting = false;
+
+    public boolean isForwarding() {
+        return isFowarding;
+    }
+
+    private boolean isFowarding = false;
 
     private final LinkedBlockingDeque<String> interceptedRequests = new LinkedBlockingDeque<>(1);
 
@@ -67,9 +79,16 @@ public class VajraInterceptController implements ActionListener{
         isIntercepting = status;
     }
 
+    public void setFowarding(boolean fowarding) {
+        isFowarding = fowarding;
+    }
 
     public void updateRequestText(String interceptedData){
         view.setInterceptedRequest(interceptedData);
+    }
+
+    public JTextArea getInterceptTextArea(){
+        return view.getInterceptedRequestJTextArea();
     }
 
     @Override
@@ -85,6 +104,7 @@ public class VajraInterceptController implements ActionListener{
                     break;
                 case "Forward":
                     System.out.println("will call handleForwardButton()");
+                    handleForwardButton();
                     break;
                 case "Drop":
                     System.out.println("will call handleDropButton()");
@@ -125,14 +145,19 @@ public class VajraInterceptController implements ActionListener{
         }
     }
 
-    private void handleFowardButton(){
+    private void handleForwardButton(){
+        setFowarding(true);
+        interceptLock.lock();
+        try{
+            interceptCondition.signal();
+        }finally {
+            interceptLock.unlock();
+        }
         System.out.println("forward button clicked.");
     }
 
     private void handleDropButton(){
         System.out.println("drop button clicked.");
     }
-
-
 
 }

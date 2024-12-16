@@ -192,9 +192,10 @@ public class Vajra extends JFrame  {
         return dropButton;
     }
 
-    public JTextArea getInterceptedRequest(){
+    public JTextArea getInterceptedRequestJTextArea(){
         return interceptedRequest;
     }
+
 
     public void setInterceptedRequest(String data){
         interceptedRequest.setText(data);

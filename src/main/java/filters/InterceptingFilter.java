@@ -7,18 +7,19 @@ import handlers.RequestInterceptorHandler;
 import handlers.ResponseInterceptorHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import org.bouncycastle.cert.ocsp.Req;
 import org.littleshoot.proxy.HttpFiltersAdapter;
 import org.littleshoot.proxy.HttpFiltersSourceAdapter;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
-    private static VajraInterceptController vajraInterceptController;
+    private final VajraInterceptController vajraInterceptController;
 
      final Lock interceptLock;
      final Condition interceptCondition;
@@ -31,6 +32,7 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
     private static final LinkedBlockingDeque<String> interceptQueue = new LinkedBlockingDeque<>();
     private static String firstInterceptedRequest = null;
 
+    private final RequestInterceptorHandler requestInterceptorHandler = new RequestInterceptorHandler();
 
     int countQueue = 0;
 
@@ -46,74 +48,115 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
         return new HttpFiltersAdapter(originalRequest) {
 
 
+            // We will store the modified request here after user edits.
+            private String modifiedRequest = null;
+
             @Override
             public HttpResponse clientToProxyRequest(HttpObject httpObject) {
                 if (httpObject instanceof FullHttpRequest) {
 
-                    String interceptedData = RequestInterceptorHandler.handleRequest((FullHttpRequest) httpObject);
-                    interceptQueue.add(interceptedData);
+                    FullHttpRequest rqx = (FullHttpRequest) httpObject;
+                    RequestInterceptorHandler.InterceptedRequestData data  = RequestInterceptorHandler.handleRequest(rqx);
+                    // You now have three separate parts:
+                    String requestLine = data.getRequestLine();
+                    LinkedHashMap<String, String> requestHeaders = data.getHeaders();
+                    String requestBody = data.getBody();
 
-                    if(vajraInterceptController.getInterceptionStatus()){
+                    // Later, you can reconstruct a formatted-style HTTP request string:
+                    StringBuilder reconstructed = new StringBuilder();
+                    reconstructed.append(requestLine).append("\n");
+                    requestHeaders.forEach((key, value) -> reconstructed.append(key).append(": ").append(value).append("\n"));
+                    reconstructed.append("\n");
+                    if (!requestBody.isEmpty()) {
+                        reconstructed.append(requestBody).append("\n");
+                    }
 
-                        countQueue += 1;
-                        System.out.println("intercept_queue_count: " + countQueue);
-                        System.out.println("intercept_queue_size: " + interceptQueue.size());
-                        try {
-                            System.out.println("intercept_queue_value: " + interceptQueue.takeFirst());
-                        } catch (InterruptedException e) {
-
-                            throw new RuntimeException(e);
-                        }
+                    String interceptedData = reconstructed.toString();
+                    System.out.println("finalHttpRequestString: " + interceptedData);
 
 
+                    if (vajraInterceptController.getInterceptionStatus()) {
                         interceptLock.lock();
-                        try{
-
-                            if(((FullHttpRequest) httpObject).method() == HttpMethod.CONNECT){
-                                System.out.println("CONNECT request received, ignoring UI update.");
-                                // this null return  is fucking important
-                                // this null return sends the CONNECT requests unmodified for the browser to trigger a HTTP requests that being displayed in UI.
+                        try {
+                            // Ignore CONNECT requests for UI update, just pass them through
+                            if (rqx.method() == HttpMethod.CONNECT) {
                                 return null;
                             }
 
-                            // this first if statement httpObject).method() != HttpMethod.CONNECT filters out the CONNECT requests as we don't want them in our JTextArea
-                            // but the CONNECT requests are important as these are browser controls, and we don't want to interfere.
-                            // the second if statement firstInterceptedRequest == null checks if the variable is null,
-                            // if the variable is null we are making sure this is FIRST ever request AFTER enabling intercept to ON.
-                            // then we are assigning the interceptedData variable to firstInterceptedRequest (don't worry filterRequest handles one request at a time)
-                            // finally we update the UI with the data.
-                            if(((FullHttpRequest) httpObject).method() != HttpMethod.CONNECT){
-                                System.out.println("FILTERED_REQUEST_NON_CONNECT:" + interceptedData);
-                                if(firstInterceptedRequest == null){
-                                    firstInterceptedRequest = interceptedData;
-                                    vajraInterceptController.updateRequestText(firstInterceptedRequest);
-                                }
+                            // If this is the first intercepted request after enabling interception,
+                            // update UI with its data.
+                            if (firstInterceptedRequest == null && rqx.method() != HttpMethod.CONNECT) {
+                                firstInterceptedRequest = interceptedData;
+                                vajraInterceptController.updateRequestText(firstInterceptedRequest);
                             }
 
-                            // wait until interception is toggled OFF.
-                            while(vajraInterceptController.getInterceptionStatus()){
+                            // Wait while interception is ON and not forwarding
+                            while (vajraInterceptController.getInterceptionStatus() && !vajraInterceptController.isForwarding()) {
                                 interceptCondition.await();
                             }
 
-                            // nullifying firstInterceptedRequest variable again
-                            // so that we can detect FIRST request again
-                            // don't fucking touch this code. I have wasted my life writing this piece of crap.
+                            // Reset the firstInterceptedRequest for the next request
                             firstInterceptedRequest = null;
-                            System.out.println("Interception is turned OFF, forwarding requests.");
 
-                        }catch (Exception e){
-                            // restores the thread's interrupted state
+                            // If user clicked Forward:
+                            if (vajraInterceptController.isForwarding()) {
+                                vajraInterceptController.setFowarding(false);
+
+                                // Convert the edited request text from UI back into FullHttpRequest
+                                modifiedRequest = vajraInterceptController.getInterceptTextArea().getText();
+
+                                FullHttpRequest parsedData = requestInterceptorHandler.parseModifiedRequestToFullHttpRequest(modifiedRequest);
+                                RequestInterceptorHandler.InterceptedRequestData parseModifiedData = RequestInterceptorHandler.handleRequest(parsedData);
+
+
+                                // first line of segregation coming from parseModifiedData
+                                String[] parsedRequestLineData = parseModifiedData.getRequestLine().split(" ");
+                                String parsedMethod = parsedRequestLineData[0];
+                                String parsedUri = parsedRequestLineData[1];
+                                String parsedProtocolVersion = parsedRequestLineData[2];
+
+                                rqx.setMethod(parsedData.method());
+                                rqx.setUri(parsedData.uri());
+                                rqx.setProtocolVersion(parsedData.protocolVersion());
+
+                                System.out.println("parsedMethod " + parsedMethod);
+                                System.out.println("parsedUri " + parsedUri);
+                                System.out.println("parsedProtocolVersion " + parsedProtocolVersion);
+
+
+                                // second line of segregation coming from parsedData
+                                rqx.headers().clear();
+                                rqx.headers().set(parsedData.headers());
+
+                                // third line of segregation coming from parsedData
+                                rqx.content().clear();
+                                rqx.content().writeBytes(parsedData.content());
+
+                                // Clear UI text or set it to something else if needed
+                                vajraInterceptController.updateRequestText("khali");
+
+                                if (vajraInterceptController.getInterceptTextArea().getText().equalsIgnoreCase("khali")) {
+                                    // Return the original request unmodified (if you have it).
+                                    return null;
+                                }
+
+
+                                // Return null to continue pipeline
+                                // We can substitute the modified request in proxyToServerRequest()
+                                // but are not doing it currently, if faced any issues we will do it later
+                                // or we will take it in the refactoring iteration.
+
+                            }
+
+                        } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                             e.printStackTrace();
-                        }finally {
-                            System.out.println("unlock() called from InterceptingFilter class.");
+                        } finally {
                             interceptLock.unlock();
                         }
-
                     }
-
                 }
-
+                // If not intercepting or no modifications, return null to continue normal proxying
                 return null;
             }
 
@@ -137,6 +180,7 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
     public int getMaximumResponseBufferSizeInBytes() {
         return 10 * 1024 * 1024;
     }
+
 
     public void debugProxyData(int queueCount, int queueSize, String queueValue){
         System.out.println("QUEUE_COUNT: " + queueCount);
