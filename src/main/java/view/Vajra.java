@@ -1,6 +1,7 @@
 package view;
 
 
+import controller.history.VajraHistoryController;
 import view.settings.SettingsProxyPanel;
 
 import javax.swing.*;
@@ -23,8 +24,6 @@ public class Vajra extends JFrame  {
 
     // intercept tab
     private JPanel interceptPane;
-//    private JTextArea interceptedRequest;
-//    private JEditorPane interceptedRequest;
     private JTextPane interceptedRequest;
 
 
@@ -36,14 +35,10 @@ public class Vajra extends JFrame  {
     private JButton forwardButton;
     private JButton dropButton;
 
-
-
     // --> end: proxy
 
 
     // --> start: http history
-
-
     // getters for history table
     public JTable getHttpHistoryTable() {
         return httpHistoryTable;
@@ -70,8 +65,6 @@ public class Vajra extends JFrame  {
 
     // ----- Request & Response Panes ----- //
 
-
-
     // create the popup menu
     // init has tobe done here for JPopupMenu else controller aint getting triggered.
     JPopupMenu popupMenu = new JPopupMenu();
@@ -83,7 +76,6 @@ public class Vajra extends JFrame  {
 
 
     // --> start repeater
-
 
     // getters for repeater empty panel
     public JPanel getRepeaterPanel() {
@@ -101,7 +93,6 @@ public class Vajra extends JFrame  {
     private JTextArea textArea1;
     private JTextArea textArea2;
 
-
     // --> end repeater
 
 
@@ -115,14 +106,18 @@ public class Vajra extends JFrame  {
     private SettingsProxyPanel settingsProxyPanelView;
 
 
+
+    // init variables related to the HTTP History Table;
+    String[] column = {"#", "Host", "Method", "URL", "Params", "Edited", "Status code", "Length", "MIME Type", "Extension", "title", "TLS", "IP", "Time", "Listener Port"};
+    Object[][] data = {};
+    DefaultTableModel tableModel = new DefaultTableModel(data, column);
+    // getters for the table model
+    public DefaultTableModel getTableModel() {
+        return tableModel;
+    }
+
     //constructor
     public Vajra()  {
-
-
-//        interceptedRequest.setSize(new Dimension(300, 200));
-//        interceptedRequest.setEditorKit(new WrapEditorKit());
-
-
 
         setContentPane(MainPane);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -155,33 +150,7 @@ public class Vajra extends JFrame  {
          * Interception Related UI Changes
          */
 
-        // UI changes specific to JTextPane
-        // line wrapping
-//        StyledDocument document = interceptedRequest.getStyledDocument();
-//        Style defaultStyle = StyleContext.getDefaultStyleContext().getStyle(StyleContext.DEFAULT_STYLE);
-//        Style requestLineStyle = document.addStyle("requestLine", defaultStyle);
-//        StyleConstants.setBold(requestLineStyle, true);
-//        StyleConstants.setForeground(requestLineStyle, new Color(0x00, 0x88, 0x88)); // teal
-//
-//        // Header key style
-//        Style headerKeyStyle = document.addStyle("headerKey", defaultStyle);
-//        StyleConstants.setBold(headerKeyStyle, true);
-//        StyleConstants.setForeground(headerKeyStyle, new Color(0x80, 0x00, 0x80)); // purple
-//
-//        // Header value style
-//        Style headerValueStyle = document.addStyle("headerValue", defaultStyle);
-//        StyleConstants.setForeground(headerValueStyle, new Color(0x00, 0x60, 0x00)); // dark green
-//
-//        // Body style
-//        Style bodyStyle = document.addStyle("body", defaultStyle);
-//        // Slightly darker gray for body
-//        StyleConstants.setForeground(bodyStyle, new Color(0x33, 0x33, 0x33));
 
-
-//        interceptedRequest.setWrao(true);
-//        interceptedRequest.setWrapStyleWord(true);
-
-//        interceptedRequest.setEditorKit(new WrapEditorKit());
 
 
         /***
@@ -189,43 +158,19 @@ public class Vajra extends JFrame  {
          */
 
         // add the menu item to popup menu.
-
         popupMenu.add(sendToRepeaterItem);
 
-
-
-        String[] column = {"#", "Host", "Method", "URL", "Params", "Edited", "Status code", "Length", "MIME Type", "Extension", "title", "TLS", "IP", "Time", "Listener Port"};
-        Object[][] data = {
-                {1, "example.com", "GET", "http://example.com/home", "id=123", false, 200, 1024, "text/html", "html", "Home Page", true, "93.184.216.34", "2024-12-07 10:00:00", 8080},
-                {2, "testsite.com", "POST", "https://testsite.com/login", "username=admin&password=1234", true, 302, 512, "application/json", "json", "Login Redirect", true, "192.168.1.1", "2024-12-07 10:05:00", 443},
-                {3, "myapi.com", "PUT", "https://myapi.com/update", "item=45&value=on", true, 204, 0, "application/json", "json", "", true, "172.217.0.0", "2024-12-07 10:10:00", 80},
-                {4, "secure-site.com", "DELETE", "https://secure-site.com/remove", "token=abcdef123456", false, 401, 256, "text/plain", "txt", "Unauthorized", true, "8.8.8.8", "2024-12-07 10:15:00", 8443},
-                {5, "example.org", "GET", "http://example.org/contact", "", false, 404, 512, "text/html", "html", "Not Found", false, "93.184.216.35", "2024-12-07 10:20:00", 8080}
-        };
-
-
-        DefaultTableModel tableModel = new DefaultTableModel(data, column);
-
-
+        // set HTTP history table model
         httpHistoryTable.setModel(tableModel);
 
 
+        // main window related UI
         setSize(1024, 900);
         setVisible(true);
     }
 
-    // methods related to color scheme.
-    private void insertRequestLine(StyledDocument document, String requestLine) {
-        // requestLine might look like: "POST /api-2.0/auth/code-generation/login/4.0/ HTTP/2"
-        Style requestLineStyle = document.getStyle("requestLine");
-        try {
-            document.insertString(document.getLength(), requestLine + "\n", requestLineStyle);
-        } catch (BadLocationException e) {
-            e.printStackTrace();
-        }
-    }
 
-    // Getters for GUI components
+    // Getters for Interception, Forwarding, Dropping GUI components
     public JButton getInterceptButton(){
         return interceptButton;
     }
@@ -242,7 +187,6 @@ public class Vajra extends JFrame  {
         return interceptedRequest;
     }
 
-
     public void setInterceptedRequest(String data){
         interceptedRequest.setText(data);
     }
@@ -256,7 +200,6 @@ public class Vajra extends JFrame  {
     public JMenuItem getSettingsMenuItemClick(){
         return mainMenuSettings;
     }
-
 
     // methods to update GUI for button state
     public void setInterceptButtonState(String text, Color background, Color foreground){
@@ -284,7 +227,6 @@ public class Vajra extends JFrame  {
         // Logic to send the request to the Repeater tab/component
         System.out.println("Sending to Repeater: " + requestDetails);
     }
-
 
     // Custom EditorKit that supports wrapping
     static class WrapEditorKit extends StyledEditorKit {

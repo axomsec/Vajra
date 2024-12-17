@@ -1,31 +1,43 @@
 package controller.history;
 
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpHeaders;
+import model.HttpHistoryEntryModel;
 import view.Vajra;
 
 import javax.swing.*;
-import java.awt.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicInteger;
+
 
 public class VajraHistoryController implements ActionListener {
-
+    
 
     private final Vajra view;
 
     private final JTable httpHistoryTable;
     private final JMenuItem sendToRepeaterItem;
 
+    private final LinkedList<HttpHistoryEntryModel> historyList;
+
 
     public VajraHistoryController(Vajra view, JTable httpHistoryTable, JMenuItem sendToRepeaterItem) {
         this.view = view;
         this.httpHistoryTable = httpHistoryTable;
         this.sendToRepeaterItem = sendToRepeaterItem;
+        this.historyList = new LinkedList<>();
 
         System.out.println("calling from VajraHistoryController()");
 
 
+        System.out.println("historyList ==  " + historyList.toString());
+
+//        populateTable(view.getTableModel());
 
         // add the action listener
         sendToRepeaterItem.addActionListener(this);
@@ -72,4 +84,85 @@ public class VajraHistoryController implements ActionListener {
     private void handleSendToRepeaterMenuClick(){
         System.out.println("inside handleSendToRepeaterMenuClick");
     }
+
+
+    // Add a single history entry
+    public void addHistoryEntry(HttpHistoryEntryModel entry) {
+        historyList.add(entry);
+    }
+
+    // Add multiple history entries at once
+    public void addAllHistory(LinkedList<HttpHistoryEntryModel> entries) {
+        historyList.addAll(entries);
+    }
+
+    // Populate table model with all history data
+    public void populateTable(DefaultTableModel tableModel) {
+        // Clear existing data
+        // important step, else repeated data populates.
+        tableModel.setRowCount(0);
+
+        // iterate through the entries.
+        for (HttpHistoryEntryModel entry : historyList) {
+            tableModel.addRow(entry.toTableRow());
+        }
+    }
+
+    // Clear all history from both LinkedList and table model
+    public void clearHistory(DefaultTableModel tableModel) {
+        historyList.clear();
+        tableModel.setRowCount(0);
+    }
+
+    // Get the LinkedList (optional, for other operations)
+    public LinkedList<HttpHistoryEntryModel> getHistoryList() {
+        return historyList;
+    }
+
+
+    public HttpHistoryEntryModel createHttpHistoryEntry(FullHttpRequest rqx, int id, String ip, String time, int listenerPort) {
+        // Extract HTTP method
+        String method = rqx.method().name();
+
+        // Extract URL: Combine the Host header and URI
+        HttpHeaders headers = rqx.headers();
+        String host = headers.get("Host", "unknown-host");
+        String uri = rqx.uri();
+        String url = (host.startsWith("https") ? "https://" : "http://") + host + uri;
+
+        // Extract parameters (query string)
+        String params = "";
+        if (uri.contains("?")) {
+            params = uri.substring(uri.indexOf("?") + 1);
+        }
+
+        // Extract body length
+        int contentLength = rqx.content().readableBytes();
+
+        // MIME Type: Look for Content-Type header
+        String mimeType = headers.get("Content-Type", "unknown");
+
+        // TLS: Check if the request is over HTTPS (context-dependent)
+        boolean tls = url.startsWith("https");
+
+        // Build and return the HttpHistoryEntry object
+        return new HttpHistoryEntryModel(
+                id,                      // Unique ID
+                host,                    // Host
+                method,                  // HTTP method
+                url,                     // Full URL
+                params,                  // Parameters
+                false,                   // Edited (default: false)
+                0,                       // Status code (to be updated when response is received)
+                contentLength,           // Request content length
+                mimeType,                // MIME Type
+                "",                      // Extension (can be parsed from URL if needed)
+                "",                      // Title (can be added later if applicable)
+                tls,                     // TLS
+                ip,                      // IP Address
+                time,                    // Request time
+                listenerPort             // Listener port
+        );
+    }
+
 }

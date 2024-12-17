@@ -1,7 +1,6 @@
 package filters;
 
-
-
+import controller.history.VajraHistoryController;
 import controller.proxy.VajraInterceptController;
 import handlers.RequestInterceptorHandler;
 import handlers.ResponseInterceptorHandler;
@@ -9,6 +8,7 @@ import httphighlighter.HttpHighLighter;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import model.HttpHistoryEntryModel;
 import org.bouncycastle.cert.ocsp.Req;
 import org.littleshoot.proxy.HttpFiltersAdapter;
 import org.littleshoot.proxy.HttpFiltersSourceAdapter;
@@ -19,18 +19,24 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
+    // Thread-safe global ID counter
+    // Auto-incrementing ID for HTTP history
+    private static final AtomicInteger requestId = new AtomicInteger(1);
+
+
+    private final Vajra view;
     private final VajraInterceptController vajraInterceptController;
+    private final VajraHistoryController vajraHistoryController;
 
      final Lock interceptLock;
      final Condition interceptCondition;
 
-
-    private boolean interceptionStatus;
 
     private final LinkedBlockingQueue<FullHttpRequest> interceptedRequestsQueue = new LinkedBlockingQueue<FullHttpRequest>();
     private final BlockingQueue<FullHttpRequest> requestQueue = new LinkedBlockingQueue<>();
@@ -39,16 +45,13 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
     private final BlockingQueue<String> interceptedRequestStrings = new LinkedBlockingQueue<>();
 
 
-
-    private static String firstInterceptedRequest = null;
-
     private final RequestInterceptorHandler requestInterceptorHandler = new RequestInterceptorHandler();
 
-    int countQueue = 0;
 
-
-    public InterceptingFilter(VajraInterceptController vajraInterceptController, Lock interceptLock, Condition interceptCondition) {
+    public InterceptingFilter(Vajra view, VajraInterceptController vajraInterceptController, VajraHistoryController vajraHistoryController, Lock interceptLock, Condition interceptCondition) {
+        this.view = view;
         this.vajraInterceptController = vajraInterceptController;
+        this.vajraHistoryController = vajraHistoryController;
         this.interceptCondition = interceptCondition;
         this.interceptLock = interceptLock;
 
@@ -67,6 +70,22 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                 if (httpObject instanceof FullHttpRequest) {
 
                     FullHttpRequest rqx = (FullHttpRequest) httpObject;
+
+                    // Ignore CONNECT requests for UI update, just pass them through
+                    if (rqx.method() == HttpMethod.CONNECT) {
+                        return null;
+                    }
+
+                    // Example data for IP, time, and listener port
+                    String ip = "192.168.1.1"; // Replace with actual client IP
+                    String time = java.time.LocalDateTime.now().toString();
+                    int listenerPort = 8080;
+
+                    // Use the thread-safe ID increment
+                    int currentRequestId = requestId.getAndIncrement();
+                    System.out.println("Request Counter: id = " + currentRequestId);
+                    HttpHistoryEntryModel entry = vajraHistoryController.createHttpHistoryEntry(rqx, currentRequestId , ip, time, listenerPort);
+
                     RequestInterceptorHandler.InterceptedRequestData data  = RequestInterceptorHandler.handleRequest(rqx);
                     // You now have three separate parts:
                     String requestLine = data.getRequestLine();
@@ -86,18 +105,16 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                     System.out.println("finalHttpRequestString: " + interceptedData);
 
 
+
+
+                    // Add the entry to the controller
+                    vajraHistoryController.addHistoryEntry(entry);
+                    // populate the table with the data saved to the controller
+                    vajraHistoryController.populateTable(view.getTableModel());
+
                     if (vajraInterceptController.getInterceptionStatus()) {
-
-
                         interceptLock.lock();
                         try {
-                            // Ignore CONNECT requests for UI update, just pass them through
-                            if (rqx.method() == HttpMethod.CONNECT) {
-                                return null;
-                            }
-
-
-
 
 
                             // Enqueue the new intercepted request
@@ -110,29 +127,11 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                                 displayNextQueuedRequest();
                             }
 
-                            // If this is the first intercepted request after enabling interception,
-                            // update UI with its data.
-//                            if (firstInterceptedRequest == null && rqx.method() != HttpMethod.CONNECT) {
-//
-//                                firstInterceptedRequest = interceptedData;
-//
-//                                // Get the JTextPane from your controller (you need a method for this).
-//                                JTextPane interceptPane = vajraInterceptController.getInterceptTextPane();
-//
-//                                // Apply syntax highlighting
-//                                HttpHighLighter.createStyledHttpView(firstInterceptedRequest, interceptPane);
-//
-////                                vajraInterceptController.updateRequestText(firstInterceptedRequest);
-//                            }
 
                             // Wait while interception is ON and not forwarding
                             while (vajraInterceptController.getInterceptionStatus() && !vajraInterceptController.isForwarding()) {
                                 interceptCondition.await();
                             }
-
-                            // Reset the firstInterceptedRequest for the next request
-//                            firstInterceptedRequest = null;
-
 
                             // If user clicked Forward:
                             if (vajraInterceptController.isForwarding()) {
@@ -239,12 +238,6 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
         System.out.println("QUEUE_COUNT: " + queueCount);
         System.out.println("QUEUE_SIZE: " + queueSize);
         System.out.println("QUEUE_VALUE: " + queueValue);
-    }
-
-    private static void enqueueRequest(String uri, String content, BlockingQueue<FullHttpRequest> requestQueue, FullHttpRequest incomingReq) throws InterruptedException {
-        incomingReq.retain();
-        requestQueue.put(incomingReq);
-        System.out.println("[Main] Enqueued request: URI=" + uri);
     }
 
     /**
