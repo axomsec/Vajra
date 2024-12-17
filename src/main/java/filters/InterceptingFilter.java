@@ -6,6 +6,7 @@ import controller.proxy.VajraInterceptController;
 import handlers.RequestInterceptorHandler;
 import handlers.ResponseInterceptorHandler;
 import httphighlighter.HttpHighLighter;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import org.bouncycastle.cert.ocsp.Req;
@@ -14,6 +15,7 @@ import org.littleshoot.proxy.HttpFiltersSourceAdapter;
 import view.Vajra;
 
 import javax.swing.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.concurrent.*;
@@ -30,9 +32,14 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
     private boolean interceptionStatus;
 
-    private final LinkedBlockingDeque<String> interceptedRequests = new LinkedBlockingDeque<>(1);
+    private final LinkedBlockingQueue<FullHttpRequest> interceptedRequestsQueue = new LinkedBlockingQueue<FullHttpRequest>();
+    private final BlockingQueue<FullHttpRequest> requestQueue = new LinkedBlockingQueue<>();
 
-    private static final LinkedBlockingDeque<String> interceptQueue = new LinkedBlockingDeque<>();
+    // Use a queue for ALL intercepted requests:
+    private final BlockingQueue<String> interceptedRequestStrings = new LinkedBlockingQueue<>();
+
+
+
     private static String firstInterceptedRequest = null;
 
     private final RequestInterceptorHandler requestInterceptorHandler = new RequestInterceptorHandler();
@@ -44,18 +51,19 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
         this.vajraInterceptController = vajraInterceptController;
         this.interceptCondition = interceptCondition;
         this.interceptLock = interceptLock;
+
     }
 
     @Override
     public HttpFiltersAdapter filterRequest(HttpRequest originalRequest, ChannelHandlerContext ctx) {
         return new HttpFiltersAdapter(originalRequest) {
 
-
             // We will store the modified request here after user edits.
             private String modifiedRequest = null;
 
             @Override
             public HttpResponse clientToProxyRequest(HttpObject httpObject) {
+
                 if (httpObject instanceof FullHttpRequest) {
 
                     FullHttpRequest rqx = (FullHttpRequest) httpObject;
@@ -78,8 +86,8 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                     System.out.println("finalHttpRequestString: " + interceptedData);
 
 
-
                     if (vajraInterceptController.getInterceptionStatus()) {
+
 
                         interceptLock.lock();
                         try {
@@ -88,19 +96,34 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                                 return null;
                             }
 
+
+
+
+
+                            // Enqueue the new intercepted request
+                            interceptedRequestStrings.add(interceptedData);
+
+                            // If the UI is currently "khali" or empty, show this request immediately
+                            // Check if UI currently shows "khali" or nothing
+                            String currentText = vajraInterceptController.getInterceptTextPane().getText();
+                            if (currentText.equals("khali") || currentText.trim().isEmpty()) {
+                                displayNextQueuedRequest();
+                            }
+
                             // If this is the first intercepted request after enabling interception,
                             // update UI with its data.
-                            if (firstInterceptedRequest == null && rqx.method() != HttpMethod.CONNECT) {
-                                firstInterceptedRequest = interceptedData;
-
-                                // Get the JTextPane from your controller (you need a method for this).
-                                JTextPane interceptPane = vajraInterceptController.getInterceptTextPane();
-
-                                // Apply syntax highlighting
-                                HttpHighLighter.createStyledHttpView(firstInterceptedRequest, interceptPane);
-
-//                                vajraInterceptController.updateRequestText(firstInterceptedRequest);
-                            }
+//                            if (firstInterceptedRequest == null && rqx.method() != HttpMethod.CONNECT) {
+//
+//                                firstInterceptedRequest = interceptedData;
+//
+//                                // Get the JTextPane from your controller (you need a method for this).
+//                                JTextPane interceptPane = vajraInterceptController.getInterceptTextPane();
+//
+//                                // Apply syntax highlighting
+//                                HttpHighLighter.createStyledHttpView(firstInterceptedRequest, interceptPane);
+//
+////                                vajraInterceptController.updateRequestText(firstInterceptedRequest);
+//                            }
 
                             // Wait while interception is ON and not forwarding
                             while (vajraInterceptController.getInterceptionStatus() && !vajraInterceptController.isForwarding()) {
@@ -108,7 +131,8 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                             }
 
                             // Reset the firstInterceptedRequest for the next request
-                            firstInterceptedRequest = null;
+//                            firstInterceptedRequest = null;
+
 
                             // If user clicked Forward:
                             if (vajraInterceptController.isForwarding()) {
@@ -142,10 +166,34 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
                                 // third line of segregation coming from parsedData
                                 rqx.content().clear();
-                                rqx.content().writeBytes(parsedData.content());
+                                byte[] newContentBytes = parsedData.content().toString(StandardCharsets.UTF_8).getBytes(StandardCharsets.UTF_8);
+                                rqx.content().writeBytes(newContentBytes);
+
+                                // dynamically set the correct Content-Length header
+                                rqx.headers().set(HttpHeaderNames.CONTENT_LENGTH, newContentBytes.length);
+
+                                if(rqx.method() == HttpMethod.OPTIONS){
+                                    System.out.println("Content length for the OPTIONS request: " + newContentBytes.length);
+                                }
+
+
+                                // The request currently shown has been forwarded, remove it from the queue.
+                                // The one on top of the queue is the one we are showing, so remove it now.
+                                // remove the currently processed request
+                                interceptedRequestStrings.poll();
+
+
+                                // Now display the next request if available
+                                if (!interceptedRequestStrings.isEmpty()) {
+                                    displayNextQueuedRequest();
+                                } else {
+                                    // No more requests in queue, show "khali"
+                                    vajraInterceptController.updateRequestText("");
+                                }
+
 
                                 // Clear UI text or set it to something else if needed
-                                vajraInterceptController.updateRequestText("khali");
+//                                vajraInterceptController.updateRequestText("khali");
 
                                 // Return null to continue pipeline
                                 // We can substitute the modified request in proxyToServerRequest()
@@ -187,11 +235,37 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
         return 10 * 1024 * 1024;
     }
 
-
     public void debugProxyData(int queueCount, int queueSize, String queueValue){
         System.out.println("QUEUE_COUNT: " + queueCount);
         System.out.println("QUEUE_SIZE: " + queueSize);
         System.out.println("QUEUE_VALUE: " + queueValue);
     }
+
+    private static void enqueueRequest(String uri, String content, BlockingQueue<FullHttpRequest> requestQueue, FullHttpRequest incomingReq) throws InterruptedException {
+        incomingReq.retain();
+        requestQueue.put(incomingReq);
+        System.out.println("[Main] Enqueued request: URI=" + uri);
+    }
+
+    /**
+     * Display the next request from the queue in the JTextPane.
+     */
+    private void displayNextQueuedRequest() {
+        String nextRequest = interceptedRequestStrings.peek();
+        JTextPane interceptPane = vajraInterceptController.getInterceptTextPane();
+
+        SwingUtilities.invokeLater(() -> {
+            if (nextRequest != null) {
+                HttpHighLighter.createStyledHttpView(nextRequest, interceptPane);
+                // Move caret to the top to prevent auto-scrolling
+                interceptPane.setCaretPosition(0);
+            } else {
+                interceptedRequestStrings.clear();
+                vajraInterceptController.updateRequestText("");
+                System.out.println("Queue cleared as no requests are ongoing.");
+            }
+        });
+    }
+
 
 }

@@ -1,14 +1,7 @@
 package controller.proxy;
 
 
-import httphighlighter.HttpHighLighter;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.util.CharsetUtil;
+import io.netty.handler.codec.http.*;
 import model.RequestModel;
 import view.Vajra;
 
@@ -17,6 +10,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -159,6 +153,14 @@ public class VajraInterceptController implements ActionListener{
 
     private void handleDropButton(){
         System.out.println("drop button clicked.");
+    }
+
+
+    // Interception Enqueuing
+    public void enqueueRequest(FullHttpRequest request, BlockingQueue<FullHttpRequest> queue) throws InterruptedException {
+        request.retain();
+        queue.put(request);
+        System.out.println("[Main] Enqueued request: URI=" + request.uri());
     }
 
 }

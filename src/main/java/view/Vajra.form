@@ -111,7 +111,9 @@
                         <children>
                           <component id="e5646" class="javax.swing.JTextPane" binding="interceptedRequest">
                             <constraints/>
-                            <properties/>
+                            <properties>
+                              <font name="Consolas" size="14" style="0"/>
+                            </properties>
                           </component>
                         </children>
                       </scrollpane>
