@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="view.settings.SettingIntruderPanel">
+  <grid id="27dc6" binding="intruderPanel" layout-manager="CardLayout" hgap="0" vgap="0">
+    <constraints>
+      <xy x="20" y="20" width="500" height="400"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <component id="dfaa3" class="javax.swing.JLabel">
+        <constraints>
+          <card name="Card1"/>
+        </constraints>
+        <properties>
+          <text value="INTRUDER PANEL"/>
+        </properties>
+      </component>
+    </children>
+  </grid>
+</form>
