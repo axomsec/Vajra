@@ -22,6 +22,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
@@ -46,6 +48,10 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
 
     private final RequestInterceptorHandler requestInterceptorHandler = new RequestInterceptorHandler();
+
+    // Add a logger instance
+    private static final Logger logger = Logger.getLogger(InterceptingFilter.class.getName());
+
 
 
     public InterceptingFilter(Vajra view, VajraInterceptController vajraInterceptController, VajraHistoryController vajraHistoryController, Lock interceptLock, Condition interceptCondition) {
@@ -119,6 +125,8 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
                             // Enqueue the new intercepted request
                             interceptedRequestStrings.add(interceptedData);
+                            logger.log(Level.INFO , "Added to interceptedRequestStrings: {0}. Queue size: {1}",
+                                    new Object[]{interceptedData, interceptedRequestStrings.size()});
 
                             // If the UI is currently "khali" or empty, show this request immediately
                             // Check if UI currently shows "khali" or nothing
@@ -136,6 +144,20 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                             // If user clicked Forward:
                             if (vajraInterceptController.isForwarding()) {
                                 vajraInterceptController.setFowarding(false);
+
+
+                                // WARNING: DON'T MOVE THIS POLLING STATEMENT FROM HERE
+                                // REQUESTS HAS TO BE IMMEDIATELY POLLED, AFTER FORWARD,
+                                // AS SOMETIMES IT DOES NOT REACH TO THE POLL OR SOME SHIT HAPPENS I DON'T KNOW
+                                // IF POLLED LATER, THERE COULD BE UI STALLING ISSUES, WHICH IS VERY FUCKED UP.
+                                // SO DON'T FUCKING TOUCH THIS CODE, I KNOW I WRITE DOG SHIT CODE, BUT DARE YOU.
+                                // The request currently shown has been forwarded, remove it from the queue.
+                                // The one on top of the queue is the one we are showing, so remove it now.
+                                // remove the currently processed request
+                                String removedData = interceptedRequestStrings.poll();
+                                logger.log(Level.INFO, "Polled from interceptedRequestStrings: {0}. Queue size: {1}",
+                                        new Object[]{removedData, interceptedRequestStrings.size()});
+
 
                                 // Convert the edited request text from UI back into FullHttpRequest
                                 modifiedRequest = vajraInterceptController.getInterceptTextPane().getText();
@@ -175,11 +197,6 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                                     System.out.println("Content length for the OPTIONS request: " + newContentBytes.length);
                                 }
 
-
-                                // The request currently shown has been forwarded, remove it from the queue.
-                                // The one on top of the queue is the one we are showing, so remove it now.
-                                // remove the currently processed request
-                                interceptedRequestStrings.poll();
 
 
                                 // Now display the next request if available
@@ -245,6 +262,9 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
      */
     private void displayNextQueuedRequest() {
         String nextRequest = interceptedRequestStrings.peek();
+        logger.log(Level.INFO, "Peeked interceptedRequestStrings: {0}. Queue size: {1}",
+                new Object[]{nextRequest, interceptedRequestStrings.size()});
+
         JTextPane interceptPane = vajraInterceptController.getInterceptTextPane();
 
         SwingUtilities.invokeLater(() -> {

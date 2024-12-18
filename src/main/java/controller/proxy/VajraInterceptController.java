@@ -144,7 +144,7 @@ public class VajraInterceptController implements ActionListener{
         setFowarding(true);
         interceptLock.lock();
         try{
-            interceptCondition.signal();
+            interceptCondition.signalAll();
         }finally {
             interceptLock.unlock();
         }
