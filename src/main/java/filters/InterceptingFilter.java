@@ -8,6 +8,7 @@ import httphighlighter.HttpHighLighter;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.ssl.SslHandler;
 import model.HttpHistoryEntryModel;
 import org.bouncycastle.cert.ocsp.Req;
 import org.littleshoot.proxy.HttpFiltersAdapter;
@@ -15,6 +16,10 @@ import org.littleshoot.proxy.HttpFiltersSourceAdapter;
 import view.Vajra;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -46,7 +51,7 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
     // Use a queue for ALL intercepted requests:
     private final BlockingQueue<String> interceptedRequestStrings = new LinkedBlockingQueue<>();
 
-
+    // request handler
     private final RequestInterceptorHandler requestInterceptorHandler = new RequestInterceptorHandler();
 
     // Add a logger instance
@@ -63,8 +68,17 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
     }
 
+
+
+
     @Override
     public HttpFiltersAdapter filterRequest(HttpRequest originalRequest, ChannelHandlerContext ctx) {
+
+
+        // Check if the connection has TLS
+        boolean isTls = ctx.pipeline().get(SslHandler.class) != null;
+        System.out.println("fucking tls: " + isTls);
+
         return new HttpFiltersAdapter(originalRequest) {
 
             // We will store the modified request here after user edits.
@@ -82,15 +96,26 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                         return null;
                     }
 
-                    // Example data for IP, time, and listener port
-                    String ip = "192.168.1.1"; // Replace with actual client IP
+                    // data for IP, time, and listener port
+                    // Replace with actual client IP
+                    String ip = vajraHistoryController.getClientIp(rqx.headers().get("Host"));
                     String time = java.time.LocalDateTime.now().toString();
                     int listenerPort = 8080;
 
                     // Use the thread-safe ID increment
                     int currentRequestId = requestId.getAndIncrement();
                     System.out.println("Request Counter: id = " + currentRequestId);
-                    HttpHistoryEntryModel entry = vajraHistoryController.createHttpHistoryEntry(rqx, currentRequestId , ip, time, listenerPort);
+
+
+                    HttpHistoryEntryModel entry = vajraHistoryController.createHttpHistoryEntry(
+                            rqx,
+                            currentRequestId,
+                            ip,
+                            time,
+                            listenerPort,
+                            isTls
+                    );
+
 
                     RequestInterceptorHandler.InterceptedRequestData data  = RequestInterceptorHandler.handleRequest(rqx);
                     // You now have three separate parts:
@@ -144,6 +169,7 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                             // If user clicked Forward:
                             if (vajraInterceptController.isForwarding()) {
                                 vajraInterceptController.setFowarding(false);
+
 
 
                                 // WARNING: DON'T MOVE THIS POLLING STATEMENT FROM HERE
@@ -235,6 +261,8 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
             public HttpObject proxyToClientResponse(HttpObject httpObject) {
                 if (httpObject instanceof FullHttpResponse) {
                     ResponseInterceptorHandler.handleResponse((FullHttpResponse) httpObject);
+                    System.out.println("fucking responses: " + ((FullHttpResponse) httpObject).status());
+                    vajraHistoryController.setStatusCode(((FullHttpResponse) httpObject).status().code());
                 }
                 return httpObject;
             }
@@ -267,6 +295,7 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
         JTextPane interceptPane = vajraInterceptController.getInterceptTextPane();
 
+        // updating of content in the JTextPane happens here.
         SwingUtilities.invokeLater(() -> {
             if (nextRequest != null) {
                 HttpHighLighter.createStyledHttpView(nextRequest, interceptPane);
@@ -279,6 +308,5 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
             }
         });
     }
-
 
 }

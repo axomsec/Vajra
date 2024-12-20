@@ -219,6 +219,7 @@
                                           <component id="dbef5" class="javax.swing.JTextArea" binding="httpHistoryRequestTextArea">
                                             <constraints/>
                                             <properties>
+                                              <font name="Consolas" size="12" style="0"/>
                                               <lineWrap value="true"/>
                                               <wrapStyleWord value="true"/>
                                             </properties>

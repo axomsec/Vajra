@@ -6,11 +6,15 @@ import model.HttpHistoryEntryModel;
 import view.Vajra;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -24,6 +28,11 @@ public class VajraHistoryController implements ActionListener {
     private final JMenuItem sendToRepeaterItem;
 
     private final LinkedList<HttpHistoryEntryModel> historyList;
+
+
+    // variables related to the response status code
+    int responseCode;
+
 
 
     public VajraHistoryController(Vajra view, JTable httpHistoryTable, JMenuItem sendToRepeaterItem) {
@@ -120,20 +129,31 @@ public class VajraHistoryController implements ActionListener {
     }
 
 
-    public HttpHistoryEntryModel createHttpHistoryEntry(FullHttpRequest rqx, int id, String ip, String time, int listenerPort) {
+    public HttpHistoryEntryModel createHttpHistoryEntry(FullHttpRequest rqx, int id, String ip, String time,
+                                                        int listenerPort, boolean tls) {
         // Extract HTTP method
         String method = rqx.method().name();
 
         // Extract URL: Combine the Host header and URI
         HttpHeaders headers = rqx.headers();
-        String host = headers.get("Host", "unknown-host");
+
+        // the tls flag is coming from InterceptingFiler
+        // context: ctx
+        // if the flag is true its TLS enabled else plain HTTP.
+        String host = (tls ? "https://" : "http://") + headers.get("Host", "unknown-host");
         String uri = rqx.uri();
-        String url = (host.startsWith("https") ? "https://" : "http://") + host + uri;
+        String url = uri;
+        int statusCode = getStatusCode();
+
+
+
 
         // Extract parameters (query string)
         String params = "";
         if (uri.contains("?")) {
-            params = uri.substring(uri.indexOf("?") + 1);
+
+            params = "✓";
+            //            params = uri.substring(uri.indexOf("?") + 1);
         }
 
         // Extract body length
@@ -143,7 +163,7 @@ public class VajraHistoryController implements ActionListener {
         String mimeType = headers.get("Content-Type", "unknown");
 
         // TLS: Check if the request is over HTTPS (context-dependent)
-        boolean tls = url.startsWith("https");
+//        boolean tls = url.startsWith("https");
 
         // Build and return the HttpHistoryEntry object
         return new HttpHistoryEntryModel(
@@ -153,7 +173,7 @@ public class VajraHistoryController implements ActionListener {
                 url,                     // Full URL
                 params,                  // Parameters
                 false,                   // Edited (default: false)
-                0,                       // Status code (to be updated when response is received)
+                statusCode,              // Status code (to be updated when response is received)
                 contentLength,           // Request content length
                 mimeType,                // MIME Type
                 "",                      // Extension (can be parsed from URL if needed)
@@ -163,6 +183,35 @@ public class VajraHistoryController implements ActionListener {
                 time,                    // Request time
                 listenerPort             // Listener port
         );
+    }
+
+
+    /***
+     *
+     * @param input
+     * @return
+     *
+     * This method is used to get the IP address of a hostname which is coming from the clientToProxy
+     * and this data could be then feed to the HTTP History table.
+     */
+    public String getClientIp(String input){
+        String resolvedIp = "";
+        try {
+            InetAddress inetAddress = InetAddress.getByName(input);
+            resolvedIp = inetAddress.getHostAddress();
+            return resolvedIp;
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        return resolvedIp;
+    }
+
+    public void setStatusCode(int code){
+        responseCode = code;
+    }
+
+    public int getStatusCode(){
+        return responseCode;
     }
 
 }

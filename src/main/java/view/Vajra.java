@@ -1,13 +1,15 @@
 package view;
 
 
-import controller.history.VajraHistoryController;
 import view.settings.SettingsProxyPanel;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.*;
 import java.awt.*;
+import java.net.URL;
+import java.util.Objects;
 
 /***
  * View: will handle the GUI components and layout.
@@ -161,7 +163,42 @@ public class Vajra extends JFrame  {
         popupMenu.add(sendToRepeaterItem);
 
         // set HTTP history table model
+
+
+        // this custom wrappers helps you paint a specific column in bold
+        DefaultTableCellRenderer boldColumnRenderer = boldColumnRenderer();
+
+        httpHistoryTable.getTableHeader().setPreferredSize(new Dimension(httpHistoryTable.getColumnModel().getTotalColumnWidth(), 25));
         httpHistoryTable.setModel(tableModel);
+
+        // resize the host column
+        httpHistoryTable.getColumnModel().getColumn(1).setPreferredWidth(250);
+
+        // method column
+        // resize the method column
+        httpHistoryTable.getColumnModel().getColumn(2).setPreferredWidth(45);
+
+        // resize the host column
+        httpHistoryTable.getColumnModel().getColumn(3).setPreferredWidth(500);
+
+        // params column
+        // resize the params column
+        httpHistoryTable.getColumnModel().getColumn(4).setPreferredWidth(40);
+
+
+        // edited column
+        // resize the edited column
+        httpHistoryTable.getColumnModel().getColumn(5).setPreferredWidth(40);
+
+
+
+        // TLS column
+        // resize the TLS column a little smaller.
+        httpHistoryTable.getColumnModel().getColumn(11).setPreferredWidth(30);
+
+
+        httpHistoryTable.getColumnModel().getColumn(4).setCellRenderer(boldColumnRenderer);
+        System.out.println("httpHistoryTable columns count: " + httpHistoryTable.getColumnModel().getColumnCount());
 
 
         // main window related UI
@@ -213,13 +250,49 @@ public class Vajra extends JFrame  {
     }
 
     public Image setTaskbarIcon(){
-        // Load the custom icon
-        // Replace with your icon file path
-        ImageIcon icon = new ImageIcon("./src/main/java/resources/letter-v.png");
-        // Get the Image object from the icon
+        // Load the custom icon from the classpath
+        URL iconURL = getClass().getResource("/resources/vajra.png"); // Adjust the path as needed
+
+        System.out.println("icon: " + iconURL);
+
+        if (iconURL == null) {
+            System.err.println("Resource not found: /resource/xx.png");
+            return null;
+        }
+
+        ImageIcon icon = new ImageIcon(iconURL);
         Image image = icon.getImage();
+
+        // Set the icon to the taskbar if supported
+        if (Taskbar.isTaskbarSupported()) {
+            Taskbar taskbar = Taskbar.getTaskbar();
+            try {
+                taskbar.setIconImage(image);
+            } catch (UnsupportedOperationException e) {
+                System.err.println("The OS does not support setting the taskbar icon.");
+            } catch (SecurityException e) {
+                System.err.println("Permission denied to set the taskbar icon.");
+            }
+        }
+
         return image;
     }
+
+
+    // this is custom wrapper to paint a column bold
+    private DefaultTableCellRenderer boldColumnRenderer(){
+        DefaultTableCellRenderer boldColumnRenderer = new DefaultTableCellRenderer(){
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                c.setFont(c.getFont().deriveFont(Font.BOLD));
+                return c;
+            }
+        };
+
+        return boldColumnRenderer;
+    }
+
 
     // will move this to controller
     // this is only for testing!
