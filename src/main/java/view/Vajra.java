@@ -9,7 +9,6 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.text.*;
 import java.awt.*;
 import java.net.URL;
-import java.util.Objects;
 
 /***
  * View: will handle the GUI components and layout.
@@ -61,11 +60,23 @@ public class Vajra extends JFrame  {
     // ------ history table  ------- //
 
 
+
     // ----- Request & Response Panes ----- //
     private JTextArea httpHistoryRequestTextArea;
     private JTextArea httpHistoryResponseTextArea;
 
+
+    public JTextArea getHttpHistoryRequestTextArea() {
+        return httpHistoryRequestTextArea;
+    }
+
+    public JTextArea getHttpHistoryResponseTextArea() {
+        return httpHistoryResponseTextArea;
+    }
+
     // ----- Request & Response Panes ----- //
+
+
 
     // create the popup menu
     // init has tobe done here for JPopupMenu else controller aint getting triggered.
@@ -159,6 +170,9 @@ public class Vajra extends JFrame  {
          * HTTP History UI Changes
          */
 
+
+        getRequestResponseHistoryJPanel().setVisible(false);
+
         // add the menu item to popup menu.
         popupMenu.add(sendToRepeaterItem);
 
@@ -248,6 +262,19 @@ public class Vajra extends JFrame  {
     public void setMenu(JMenuBar menuBar, JMenu menu, JMenuItem menuItem){
         menuBar.add(menu).add(menuItem);
     }
+
+
+    // HTTP history
+    private JPanel requestResponseHistoryJPanel;
+    public JPanel getRequestResponseHistoryJPanel() {
+        return requestResponseHistoryJPanel;
+    }
+
+    private JSplitPane mainHistorySplitPane;
+    public JSplitPane getMainHistorySplitPane() {
+        return mainHistorySplitPane;
+    }
+
 
     public Image setTaskbarIcon(){
         // Load the custom icon from the classpath

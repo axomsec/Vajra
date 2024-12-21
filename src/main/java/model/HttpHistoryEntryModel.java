@@ -45,4 +45,8 @@ public class HttpHistoryEntryModel {
         return new Object[]{id, host, method, url, params, edited, statusCode, length, mimeType,
                 extension, title, tls, ip, time, listenerPort};
     }
+
+    public void setStatusCode(Integer status) {
+        this.statusCode = status;
+    }
 }

@@ -23,6 +23,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
@@ -51,12 +52,29 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
     // Use a queue for ALL intercepted requests:
     private final BlockingQueue<String> interceptedRequestStrings = new LinkedBlockingQueue<>();
 
+
+    // Use these maps to store requests and responses before adding them to history
+    // Key: requestId
+    // Value: HttpHistoryEntryModel associated with that request
+    private final Map<Integer, HttpHistoryEntryModel> pendingEntries = new ConcurrentHashMap<>();
+
+    // Keep track of request bodies and modifications separately if needed
+    private final Map<Integer, FullHttpRequest> pendingFullRequests = new ConcurrentHashMap<>();
+
+
+
+    // Log responses against the requestId as well
+    // We'll set the status code (and possibly full response) in pendingEntries once available
+    private final Map<Integer, Integer> pendingResponseStatus = new ConcurrentHashMap<>();
+
+
+
+
     // request handler
     private final RequestInterceptorHandler requestInterceptorHandler = new RequestInterceptorHandler();
 
     // Add a logger instance
     private static final Logger logger = Logger.getLogger(InterceptingFilter.class.getName());
-
 
 
     public InterceptingFilter(Vajra view, VajraInterceptController vajraInterceptController, VajraHistoryController vajraHistoryController, Lock interceptLock, Condition interceptCondition) {
@@ -67,8 +85,6 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
         this.interceptLock = interceptLock;
 
     }
-
-
 
 
     @Override
@@ -83,6 +99,7 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
             // We will store the modified request here after user edits.
             private String modifiedRequest = null;
+            private int currentRequestId = -1; // Track this request's ID
 
             @Override
             public HttpResponse clientToProxyRequest(HttpObject httpObject) {
@@ -103,7 +120,7 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                     int listenerPort = 8080;
 
                     // Use the thread-safe ID increment
-                    int currentRequestId = requestId.getAndIncrement();
+                    currentRequestId = requestId.getAndIncrement();
                     System.out.println("Request Counter: id = " + currentRequestId);
 
 
@@ -115,6 +132,8 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                             listenerPort,
                             isTls
                     );
+
+
 
 
                     RequestInterceptorHandler.InterceptedRequestData data  = RequestInterceptorHandler.handleRequest(rqx);
@@ -136,12 +155,22 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                     System.out.println("finalHttpRequestString: " + interceptedData);
 
 
+                    // Store the entry and request; don't populate the table yet
+                    pendingEntries.put(currentRequestId, entry);
+                    pendingFullRequests.put(currentRequestId, rqx);
 
+                    // this is reconstructed intercepted requests being stored
+                    // this is for the HTTP history request/response being shown below when clicked into a table element.
+                    vajraHistoryController.getReconstructedFullRequests().put(currentRequestId, interceptedData);
+
+//                    if (!vajraInterceptController.getInterceptionStatus()) {
+//                        addEntryToHistory(currentRequestId);
+//                    }
 
                     // Add the entry to the controller
-                    vajraHistoryController.addHistoryEntry(entry);
-                    // populate the table with the data saved to the controller
-                    vajraHistoryController.populateTable(view.getTableModel());
+//                    vajraHistoryController.addHistoryEntry(entry);
+//                    // populate the table with the data saved to the controller
+//                    vajraHistoryController.populateTable(view.getTableModel());
 
                     if (vajraInterceptController.getInterceptionStatus()) {
                         interceptLock.lock();
@@ -233,6 +262,9 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                                     vajraInterceptController.updateRequestText("");
                                 }
 
+                                // Now that user forwarded, add entry to history
+//                                addEntryToHistory(currentRequestId);
+
 
                                 // Clear UI text or set it to something else if needed
 //                                vajraInterceptController.updateRequestText("khali");
@@ -259,10 +291,18 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
             @Override
             public HttpObject proxyToClientResponse(HttpObject httpObject) {
-                if (httpObject instanceof FullHttpResponse) {
-                    ResponseInterceptorHandler.handleResponse((FullHttpResponse) httpObject);
-                    System.out.println("fucking responses: " + ((FullHttpResponse) httpObject).status());
-                    vajraHistoryController.setStatusCode(((FullHttpResponse) httpObject).status().code());
+                if (httpObject instanceof FullHttpResponse && currentRequestId != -1) {
+                    FullHttpResponse response = (FullHttpResponse) httpObject;
+                    String reconstructedResponse = ResponseInterceptorHandler.handleResponse(response);
+
+                    int statusCode = response.status().code();
+                    pendingResponseStatus.put(currentRequestId, statusCode);
+                    vajraHistoryController.getReconstructedFullResponses().put(currentRequestId, reconstructedResponse);
+
+                    // Now, add the entry to history
+                    addEntryToHistory(currentRequestId);
+
+                    vajraHistoryController.displayRequestAndResponse(currentRequestId);
                 }
                 return httpObject;
             }
@@ -279,11 +319,40 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
         return 10 * 1024 * 1024;
     }
 
+    private void addEntryToHistory(int requestId) {
+        HttpHistoryEntryModel entry = pendingEntries.get(requestId);
+        logger.log(Level.INFO, "pendingEntries: {0}", entry);
+        if (entry == null) {
+            logger.log(Level.WARNING, "No pending entry found for Request ID: {0}", requestId);
+            return;
+        }
+
+        // Update entry with response code if available
+        Integer status = pendingResponseStatus.get(requestId);
+        if (status != null) {
+            entry.setStatusCode(status);
+        } else {
+            logger.log(Level.WARNING, "No status code found for Request ID: {0}", requestId);
+        }
+
+
+        // Add the entry to the controller and populate the table
+        vajraHistoryController.addHistoryEntry(entry);
+        vajraHistoryController.populateTable(view.getTableModel());
+
+        // Clean up maps
+        pendingEntries.remove(requestId);
+        pendingResponseStatus.remove(requestId);
+//        reconstructedPendingFullResponses.remove(requestId);
+    }
+
+
     public void debugProxyData(int queueCount, int queueSize, String queueValue){
         System.out.println("QUEUE_COUNT: " + queueCount);
         System.out.println("QUEUE_SIZE: " + queueSize);
         System.out.println("QUEUE_VALUE: " + queueValue);
     }
+
 
     /**
      * Display the next request from the queue in the JTextPane.
