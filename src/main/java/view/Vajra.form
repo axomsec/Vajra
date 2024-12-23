@@ -214,12 +214,10 @@
                                         <properties/>
                                         <border type="none"/>
                                         <children>
-                                          <component id="dbef5" class="javax.swing.JTextArea" binding="httpHistoryRequestTextArea">
+                                          <component id="c2909" class="javax.swing.JEditorPane" binding="httpHistoryRequestTextArea">
                                             <constraints/>
                                             <properties>
-                                              <font name="Consolas" size="12" style="0"/>
-                                              <lineWrap value="true"/>
-                                              <wrapStyleWord value="true"/>
+                                              <font name="Consolas" size="14" style="0"/>
                                             </properties>
                                           </component>
                                         </children>
@@ -250,12 +248,10 @@
                                         <properties/>
                                         <border type="none"/>
                                         <children>
-                                          <component id="dc366" class="javax.swing.JTextArea" binding="httpHistoryResponseTextArea">
+                                          <component id="f7f29" class="javax.swing.JEditorPane" binding="httpHistoryResponseTextArea">
                                             <constraints/>
                                             <properties>
-                                              <editable value="false"/>
-                                              <lineWrap value="true"/>
-                                              <wrapStyleWord value="true"/>
+                                              <font name="Consolas" size="14" style="0"/>
                                             </properties>
                                           </component>
                                         </children>

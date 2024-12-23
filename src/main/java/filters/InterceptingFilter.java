@@ -302,7 +302,6 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                     // Now, add the entry to history
                     addEntryToHistory(currentRequestId);
 
-                    vajraHistoryController.displayRequestAndResponse(currentRequestId);
                 }
                 return httpObject;
             }

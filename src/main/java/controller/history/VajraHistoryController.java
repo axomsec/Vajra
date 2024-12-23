@@ -1,6 +1,8 @@
 package controller.history;
 
 import filters.InterceptingFilter;
+import httphighlighter.HttpHighLighter;
+import httphighlighter.WrappingEditorKit;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaders;
 import model.HttpHistoryEntryModel;
@@ -31,11 +33,13 @@ public class VajraHistoryController implements ActionListener {
 
     private final Vajra view;
 
+
     private final JTable httpHistoryTable;
     private final JMenuItem sendToRepeaterItem;
 
     private final LinkedList<HttpHistoryEntryModel> historyList;
 
+    private HttpHighLighter httpHighLighter;
 
     // variables related to the response status code
     int responseCode;
@@ -259,9 +263,7 @@ public class VajraHistoryController implements ActionListener {
         // Extract parameters (query string)
         String params = "";
         if (uri.contains("?")) {
-
             params = "✓";
-            //            params = uri.substring(uri.indexOf("?") + 1);
         }
 
         // Extract body length
@@ -305,9 +307,30 @@ public class VajraHistoryController implements ActionListener {
         String response     = reconstructedFullResponses.get(requestId);
 
         javax.swing.SwingUtilities.invokeLater(() -> {
+
+
+            // request
+            view.getHttpHistoryRequestEditorPane().setEditorKit(new WrappingEditorKit());
+            view.getHttpHistoryRequestEditorPane().setContentType("text/plain");
+            view.getHttpHistoryRequestEditorPane().setEditable(false);
+
+
+            // response
+            view.getHttpHistoryResponseEditorPane().setEditorKit(new WrappingEditorKit());
+            view.getHttpHistoryResponseEditorPane().setContentType("text/plain");
+            view.getHttpHistoryResponseEditorPane().setEditable(false);
+
+
+
             // accessing the UI components from VajHistoryController to update the Panels to be done here
-            view.getHttpHistoryRequestTextArea().setText(request);
-            view.getHttpHistoryResponseTextArea().setText(response);
+            view.getHttpHistoryRequestEditorPane().setText(request);
+            view.getHttpHistoryRequestEditorPane().setCaretPosition(0);
+
+            view.getHttpHistoryResponseEditorPane().setText(response);
+            view.getHttpHistoryResponseEditorPane().setCaretPosition(0);
+
+            //HttpHighLighter.highlightHttp(request, view.getHttpHistoryRequestTextArea());
+            //HttpHighLighter.highlightHttp(response, view.getHttpHistoryResponseTextArea());
         });
 
 

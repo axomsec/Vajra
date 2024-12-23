@@ -62,15 +62,15 @@ public class Vajra extends JFrame  {
 
 
     // ----- Request & Response Panes ----- //
-    private JTextArea httpHistoryRequestTextArea;
-    private JTextArea httpHistoryResponseTextArea;
+    private JEditorPane httpHistoryRequestTextArea;
+    private JEditorPane httpHistoryResponseTextArea;
 
 
-    public JTextArea getHttpHistoryRequestTextArea() {
+    public JEditorPane getHttpHistoryRequestEditorPane() {
         return httpHistoryRequestTextArea;
     }
 
-    public JTextArea getHttpHistoryResponseTextArea() {
+    public JEditorPane getHttpHistoryResponseEditorPane() {
         return httpHistoryResponseTextArea;
     }
 
@@ -271,6 +271,7 @@ public class Vajra extends JFrame  {
     }
 
     private JSplitPane mainHistorySplitPane;
+
     public JSplitPane getMainHistorySplitPane() {
         return mainHistorySplitPane;
     }
