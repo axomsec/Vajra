@@ -283,6 +283,9 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                             interceptLock.unlock();
                         }
                     }
+
+                    // clearing off the queue if the interception is toggled off.
+                    vajraInterceptController.onInterceptionToggledOff(interceptedRequestStrings);
                 }
                 // If not intercepting or no modifications, return null to continue normal proxying
                 return null;

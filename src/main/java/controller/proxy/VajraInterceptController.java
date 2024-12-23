@@ -1,6 +1,7 @@
 package controller.proxy;
 
 
+import filters.InterceptingFilter;
 import io.netty.handler.codec.http.*;
 import model.RequestModel;
 import view.Vajra;
@@ -14,6 +15,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /***
@@ -32,6 +35,9 @@ public class VajraInterceptController implements ActionListener{
     private static final String INTERCEPT_ON = "Intercept on";
 
     private boolean isIntercepting = false;
+
+    // Add a logger instance
+    private static final Logger logger = Logger.getLogger(InterceptingFilter.class.getName());
 
     public boolean isForwarding() {
         return isFowarding;
@@ -144,7 +150,7 @@ public class VajraInterceptController implements ActionListener{
         setFowarding(true);
         interceptLock.lock();
         try{
-            interceptCondition.signalAll();
+            interceptCondition.signal();
         }finally {
             interceptLock.unlock();
         }
@@ -156,11 +162,30 @@ public class VajraInterceptController implements ActionListener{
     }
 
 
-    // Interception Enqueuing
-    public void enqueueRequest(FullHttpRequest request, BlockingQueue<FullHttpRequest> queue) throws InterruptedException {
-        request.retain();
-        queue.put(request);
-        System.out.println("[Main] Enqueued request: URI=" + request.uri());
+    /**
+     * @param queueStrings
+     * This method clears the queued Request strings if the interception is toggled off.
+     * Earlier, if the intercept was being toggled off, we were not clearing the intercepted requests strings
+     * from the Blocking Queue. This rarely-raised bug where you turn the interception off and on again for forwarding
+     * the previous requests that were being queued stayed at the top of the queue which then tries to forward
+     * resulting a Bad request or some similar errors - even the UI was getting stalled with a previous request.
+     * This method seems to have solved the bug, and I have tested this with several test cases but who the fuck
+     * knows if this bug is actually resolved? it may occur, and you might have to debug yourself and shit yourself bro.
+     */
+    public void onInterceptionToggledOff(BlockingQueue<String> queueStrings) {
+        interceptLock.lock();
+        try {
+            // Remove all old/stale requests from the queue
+            queueStrings.clear();
+
+            // Reset the text in your interception pane
+            updateRequestText("");
+
+            logger.log(Level.INFO, "Interception toggled OFF: cleared interceptedRequestStrings and reset UI.");
+        } finally {
+            interceptLock.unlock();
+        }
     }
+
 
 }
