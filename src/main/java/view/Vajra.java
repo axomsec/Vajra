@@ -6,9 +6,12 @@ import view.settings.SettingsProxyPanel;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableRowSorter;
 import javax.swing.text.*;
 import java.awt.*;
 import java.net.URL;
+import java.util.List;
 
 /***
  * View: will handle the GUI components and layout.
@@ -123,7 +126,15 @@ public class Vajra extends JFrame  {
     // init variables related to the HTTP History Table;
     String[] column = {"#", "Host", "Method", "URL", "Params", "Edited", "Status code", "Length", "MIME Type", "Extension", "title", "TLS", "IP", "Time", "Listener Port"};
     Object[][] data = {};
-    DefaultTableModel tableModel = new DefaultTableModel(data, column);
+    DefaultTableModel tableModel = new DefaultTableModel(data, column){
+        @Override
+        public Class<?> getColumnClass(int columnIndex) {
+            if(columnIndex == 0){
+                return Integer.class;
+            }
+            return String.class;
+        }
+    };
     // getters for the table model
     public DefaultTableModel getTableModel() {
         return tableModel;
@@ -184,6 +195,25 @@ public class Vajra extends JFrame  {
 
         httpHistoryTable.getTableHeader().setPreferredSize(new Dimension(httpHistoryTable.getColumnModel().getTotalColumnWidth(), 25));
         httpHistoryTable.setModel(tableModel);
+
+        // adding Table Sorter to manage it smoother
+//        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
+//        httpHistoryTable.setRowSorter(sorter);
+//
+//        sorter.setSortKeys(List.of(new RowSorter.SortKey(0, SortOrder.ASCENDING)));
+
+        // Get the current default renderer for Integer
+        TableCellRenderer intRenderer = httpHistoryTable.getDefaultRenderer(Integer.class);
+
+        // Check if it’s a DefaultTableCellRenderer
+        if (intRenderer instanceof DefaultTableCellRenderer) {
+            ((DefaultTableCellRenderer) intRenderer).setHorizontalAlignment(SwingConstants.LEFT);
+        }
+
+//        tableModel.fireTableDataChanged();
+//        httpHistoryTable.setRowSorter(null);
+//        sorter.sort();
+
 
         // resize the host column
         httpHistoryTable.getColumnModel().getColumn(1).setPreferredWidth(250);

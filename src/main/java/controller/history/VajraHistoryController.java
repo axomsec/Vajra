@@ -20,7 +20,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -191,12 +193,20 @@ public class VajraHistoryController implements ActionListener {
             // Clear existing data
             tableModel.setRowCount(0);
 
+            List<HttpHistoryEntryModel> snapshot;
+            synchronized (historyList){
+                snapshot = new ArrayList<>(historyList);
+            }
+
             // Repopulate the table with all entries
-            for (HttpHistoryEntryModel entry : historyList) {
-                tableModel.addRow(entry.toTableRow());
+            for (HttpHistoryEntryModel entry : snapshot) {
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    tableModel.addRow(entry.toTableRow());
+                });
             }
 
             // Restore the selection if a Request ID was previously selected
+
             if (selectedRequestId != null) {
                 for (int row = 0; row < tableModel.getRowCount(); row++) {
                     Integer requestId = (Integer) tableModel.getValueAt(row, 0); // Assuming column 0 is Request ID
@@ -206,6 +216,8 @@ public class VajraHistoryController implements ActionListener {
                     }
                 }
             }
+
+
 //        });
     }
 
