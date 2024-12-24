@@ -139,6 +139,33 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                     RequestInterceptorHandler.InterceptedRequestData data  = RequestInterceptorHandler.handleRequest(rqx);
                     // You now have three separate parts:
                     String requestLine = data.getRequestLine();
+
+                    // this part of the code is exactly where the URIs for the Non TLS requests are parsed
+                    // and then re-added to the requestLine for showing it in the UI of the Interception JTextPane.
+                    if(!isTls){
+                        String[] lines =  requestLine.split(" ");
+                        if (lines.length == 3) {
+                            String method = lines[0];
+                            String originalUri = lines[1];
+                            String httpVersion = lines[2];
+
+                            // Extract relative path
+                            String relativeUri = String.valueOf(RequestInterceptorHandler.extractRelativePath(originalUri));
+
+                            // Reconstruct the modified request line
+                            String modifiedRequestLine = method + " " + relativeUri + " " + httpVersion;
+
+                            // Set the modified request line back to data
+                            requestLine = modifiedRequestLine;
+
+                            logger.log(Level.INFO, "Modified Request Line: {0}", modifiedRequestLine);
+                        } else {
+                            logger.log(Level.SEVERE, "Invalid request line format: {0}", requestLine);
+                            // Handle error as needed
+                        }
+                    }
+
+                    logger.log(Level.INFO, "InterceptingFilter: requestLine = " + requestLine);
                     LinkedHashMap<String, String> requestHeaders = data.getHeaders();
                     String requestBody = data.getBody();
 
@@ -163,14 +190,6 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                     // this is for the HTTP history request/response being shown below when clicked into a table element.
                     vajraHistoryController.getReconstructedFullRequests().put(currentRequestId, interceptedData);
 
-//                    if (!vajraInterceptController.getInterceptionStatus()) {
-//                        addEntryToHistory(currentRequestId);
-//                    }
-
-                    // Add the entry to the controller
-//                    vajraHistoryController.addHistoryEntry(entry);
-//                    // populate the table with the data saved to the controller
-//                    vajraHistoryController.populateTable(view.getTableModel());
 
                     if (vajraInterceptController.getInterceptionStatus()) {
                         interceptLock.lock();
@@ -217,24 +236,28 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                                 // Convert the edited request text from UI back into FullHttpRequest
                                 modifiedRequest = vajraInterceptController.getInterceptTextPane().getText();
 
-                                FullHttpRequest parsedData = requestInterceptorHandler.parseModifiedRequestToFullHttpRequest(modifiedRequest);
+                                logger.log(Level.INFO, "Modified Request: {0}", modifiedRequest);
+
+                                FullHttpRequest parsedData = requestInterceptorHandler.parseModifiedRequestToFullHttpRequest(modifiedRequest, isTls);
                                 RequestInterceptorHandler.InterceptedRequestData parseModifiedData = RequestInterceptorHandler.handleRequest(parsedData);
 
 
-                                // first line of segregation coming from parseModifiedData
-                                String[] parsedRequestLineData = parseModifiedData.getRequestLine().split(" ");
-                                String parsedMethod = parsedRequestLineData[0];
-                                String parsedUri = parsedRequestLineData[1];
-                                String parsedProtocolVersion = parsedRequestLineData[2];
 
                                 rqx.setMethod(parsedData.method());
-                                rqx.setUri(parsedData.uri());
+
+                                // the problem with direct setting the URIs in the Non TLS domains is they return
+                                // absolute URIs for example =  GET http://ifconfig.me HTTP/1.1 and the TLS based domains
+                                // returns GET /ajax?blah=blah HTTP/1.1
+                                // this step is important because of the parsing we are doing to do above while showing
+                                // the request in the JTextPane.
+                                if(!isTls){
+                                    logger.log(Level.INFO, "Forming URI from Header Host: {0}", "http://" + parsedData.headers().get("Host"));
+                                    rqx.setUri("http://" + parsedData.headers().get("Host") + RequestInterceptorHandler.extractRelativePath(parsedData.uri()));
+                                }else{
+                                    rqx.setUri(parsedData.uri());
+                                }
+
                                 rqx.setProtocolVersion(parsedData.protocolVersion());
-
-                                System.out.println("parsedMethod " + parsedMethod);
-                                System.out.println("parsedUri " + parsedUri);
-                                System.out.println("parsedProtocolVersion " + parsedProtocolVersion);
-
 
                                 // second line of segregation coming from parsedData
                                 rqx.headers().clear();
@@ -262,12 +285,6 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                                     vajraInterceptController.updateRequestText("");
                                 }
 
-                                // Now that user forwarded, add entry to history
-//                                addEntryToHistory(currentRequestId);
-
-
-                                // Clear UI text or set it to something else if needed
-//                                vajraInterceptController.updateRequestText("khali");
 
                                 // Return null to continue pipeline
                                 // We can substitute the modified request in proxyToServerRequest()

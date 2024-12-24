@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 public class ResponseInterceptorHandler {
 
     // Add a logger instance
-    private static final Logger logger = Logger.getLogger(InterceptingFilter.class.getName());
+    private static final Logger logger = Logger.getLogger(ResponseInterceptorHandler.class.getName());
 
     public static String handleResponse(FullHttpResponse response) {
         StringBuilder formattedResponse = new StringBuilder();

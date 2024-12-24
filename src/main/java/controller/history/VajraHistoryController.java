@@ -56,7 +56,7 @@ public class VajraHistoryController implements ActionListener {
 
 
     // Add a logger instance
-    private static final Logger logger = Logger.getLogger(InterceptingFilter.class.getName());
+    private static final Logger logger = Logger.getLogger(VajraHistoryController.class.getName());
 
 
     public VajraHistoryController(Vajra view, JTable httpHistoryTable, JMenuItem sendToRepeaterItem) {

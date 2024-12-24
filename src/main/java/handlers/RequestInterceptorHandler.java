@@ -4,26 +4,28 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
-import io.netty.util.internal.shaded.org.jctools.queues.MessagePassingQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import utils.LoggerUtil;
 
+
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RequestInterceptorHandler {
 
 
-    private static final Logger log = LoggerFactory.getLogger(RequestInterceptorHandler.class);
+    private static final Logger logger = Logger.getLogger(RequestInterceptorHandler.class.getName());
     private FullHttpRequest request;
 
 
     public static class InterceptedRequestData {
-        private final String requestLine;
+        private String requestLine;
         private final LinkedHashMap<String, String> headers;
         private final String body;
 
@@ -95,7 +97,7 @@ public class RequestInterceptorHandler {
      *      2. manipulation
      *      3. deletion.
      */
-    public FullHttpRequest parseModifiedRequestToFullHttpRequest(String modifiedRequestData) {
+    public FullHttpRequest parseModifiedRequestToFullHttpRequest(String modifiedRequestData, boolean isTLS) {
         // Split into lines
         String[] lines = modifiedRequestData.split("\n");
         if (lines.length == 0) {
@@ -114,6 +116,12 @@ public class RequestInterceptorHandler {
         HttpMethod method = HttpMethod.valueOf(requestLineParts[0]);
         String uri = requestLineParts[1];
         HttpVersion version = HttpVersion.valueOf(requestLineParts[2]);
+
+
+        logger.log(Level.INFO, "RequestInterceptorHandler: method = {0}", method);
+        logger.log(Level.INFO, "RequestInterceptorHandler: uri = {0}", uri);
+        logger.log(Level.INFO, "RequestInterceptorHandler: version = {0}", version);
+
 
         // Parse headers
         LinkedHashMap<String, String> headers = new LinkedHashMap<>();
@@ -139,6 +147,8 @@ public class RequestInterceptorHandler {
         }
         String body = bodyBuilder.toString().trim();
 
+
+
         // Create the FullHttpRequest
         ByteBuf content = Unpooled.EMPTY_BUFFER;
         if (!body.isEmpty()) {
@@ -161,6 +171,43 @@ public class RequestInterceptorHandler {
         return request;
     }
 
+
+    /**
+     * Converts any URI (absolute or relative) into a purely relative path + query.
+     * For example:
+     * http://example.com/foo -> /foo
+     * /foo                  -> /foo
+     * /foo?bar=baz          -> /foo?bar=baz
+     */
+    public static String extractRelativePath(String rawUri) {
+        try {
+            URI uriObj = new URI(rawUri);
+
+            // Get path; default to "/" if empty
+            String path = uriObj.getRawPath();
+            if (path == null || path.isEmpty()) {
+                path = "/";
+            }
+
+            // Append query if present
+            String query = uriObj.getRawQuery();
+            if (query != null && !query.isEmpty()) {
+                path += "?" + query;
+            }
+
+            return path;
+        } catch (URISyntaxException e) {
+            // If it's not a valid URI (or if it doesn't have a scheme/host),
+            // we treat it as an already relative path. Ensure it starts with '/'.
+            logger.log(Level.WARNING, "URI parse error or relative URI. Falling back to raw: {0}", rawUri);
+
+            // Force a leading slash if not present
+            if (!rawUri.startsWith("/")) {
+                return "/" + rawUri;
+            }
+            return rawUri;
+        }
+    }
 
     // Decode URL-encoded form data into a key-value map
     private static Map<String, String> decodeFormData(String body) {

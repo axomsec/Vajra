@@ -37,7 +37,7 @@ public class VajraInterceptController implements ActionListener{
     private boolean isIntercepting = false;
 
     // Add a logger instance
-    private static final Logger logger = Logger.getLogger(InterceptingFilter.class.getName());
+    private static final Logger logger = Logger.getLogger(VajraInterceptController.class.getName());
 
     public boolean isForwarding() {
         return isFowarding;
