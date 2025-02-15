@@ -70,7 +70,7 @@ public class VajraHistoryController implements ActionListener {
         System.out.println("calling from VajraHistoryController()");
 
 
-        System.out.println("historyList ==  " + historyList.toString());
+        System.out.println("historyList ==  " + historyList);
 
 
         javax.swing.SwingUtilities.invokeLater(() ->{
@@ -101,8 +101,8 @@ public class VajraHistoryController implements ActionListener {
                                 }
 
                                 // Revalidate and repaint the main frame to ensure layout updates
-                                view.getContentPane().revalidate();
-                                view.getContentPane().repaint();
+//                                view.getContentPane().revalidate();
+//                                view.getContentPane().repaint();
 
                             }
 
@@ -324,12 +324,14 @@ public class VajraHistoryController implements ActionListener {
             // request
             view.getHttpHistoryRequestEditorPane().setEditorKit(new WrappingEditorKit());
             view.getHttpHistoryRequestEditorPane().setContentType("text/plain");
+            view.getHttpHistoryRequestEditorPane().setBackground(Color.WHITE);
             view.getHttpHistoryRequestEditorPane().setEditable(false);
 
 
             // response
             view.getHttpHistoryResponseEditorPane().setEditorKit(new WrappingEditorKit());
             view.getHttpHistoryResponseEditorPane().setContentType("text/plain");
+            view.getHttpHistoryResponseEditorPane().setBackground(Color.WHITE);
             view.getHttpHistoryResponseEditorPane().setEditable(false);
 
 

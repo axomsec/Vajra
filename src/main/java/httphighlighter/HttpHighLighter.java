@@ -853,7 +853,7 @@ public class HttpHighLighter {
         } else if (v instanceof JSONArray) {
             insertJsonArray(doc, (JSONArray) v, keyStyle, valueStyle, indent);
         } else if (v instanceof String) {
-            insertStyledText(doc, "\"" + v.toString() + "\"", valueStyle);
+            insertStyledText(doc, "\"" + v + "\"", valueStyle);
         } else {
             // For numbers, booleans, null
             insertStyledText(doc, v.toString(), valueStyle);

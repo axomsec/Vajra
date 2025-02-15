@@ -5,7 +5,7 @@ import java.awt.*;
 
 
 public class WrappingEditorKit extends StyledEditorKit {
-    private ViewFactory defaultFactory = new WrappingViewFactory();
+    private final ViewFactory defaultFactory = new WrappingViewFactory();
 
     @Override
     public ViewFactory getViewFactory() {

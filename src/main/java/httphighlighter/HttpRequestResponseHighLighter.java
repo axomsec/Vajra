@@ -48,11 +48,9 @@ public class HttpRequestResponseHighLighter {
      */
     public void highlight(JEditorPane editorPane) {
         // Ensure the editorPane uses a StyledDocument
-        if (!(editorPane.getDocument() instanceof StyledDocument)) {
+        if (!(editorPane.getDocument() instanceof StyledDocument doc)) {
             return;
         }
-
-        StyledDocument doc = (StyledDocument) editorPane.getDocument();
 
         try {
             // Retrieve all text

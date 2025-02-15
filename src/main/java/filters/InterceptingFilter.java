@@ -13,11 +13,13 @@ import model.HttpHistoryEntryModel;
 import org.bouncycastle.cert.ocsp.Req;
 import org.littleshoot.proxy.HttpFiltersAdapter;
 import org.littleshoot.proxy.HttpFiltersSourceAdapter;
+import utils.RequestComparator;
 import view.Vajra;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.text.Document;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -104,9 +106,7 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
             @Override
             public HttpResponse clientToProxyRequest(HttpObject httpObject) {
 
-                if (httpObject instanceof FullHttpRequest) {
-
-                    FullHttpRequest rqx = (FullHttpRequest) httpObject;
+                if (httpObject instanceof FullHttpRequest rqx) {
 
                     // Ignore CONNECT requests for UI update, just pass them through
                     if (rqx.method() == HttpMethod.CONNECT) {
@@ -236,6 +236,13 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
                                 // Convert the edited request text from UI back into FullHttpRequest
                                 modifiedRequest = vajraInterceptController.getInterceptTextPane().getText();
 
+
+                                logger.log(Level.INFO, "RequestComparator: interceptedData {0}", interceptedData.trim());
+                                logger.log(Level.INFO, "RequestComparator: modifiedRequest {0}", modifiedRequest.trim());
+
+
+                                logger.log(Level.INFO, "RequestComparator: {0}", RequestComparator.isRequestEdited(interceptedData, modifiedRequest));
+
                                 logger.log(Level.INFO, "Modified Request: {0}", modifiedRequest);
 
                                 FullHttpRequest parsedData = requestInterceptorHandler.parseModifiedRequestToFullHttpRequest(modifiedRequest, isTls);
@@ -311,8 +318,7 @@ public class InterceptingFilter extends HttpFiltersSourceAdapter {
 
             @Override
             public HttpObject proxyToClientResponse(HttpObject httpObject) {
-                if (httpObject instanceof FullHttpResponse && currentRequestId != -1) {
-                    FullHttpResponse response = (FullHttpResponse) httpObject;
+                if (httpObject instanceof FullHttpResponse response && currentRequestId != -1) {
                     String reconstructedResponse = ResponseInterceptorHandler.handleResponse(response);
 
                     int statusCode = response.status().code();

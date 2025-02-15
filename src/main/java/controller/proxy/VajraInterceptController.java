@@ -7,6 +7,9 @@ import model.RequestModel;
 import view.Vajra;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.Document;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -26,7 +29,7 @@ import java.util.logging.Logger;
 public class VajraInterceptController implements ActionListener{
 
     private final Vajra view;
-    private RequestModel model;
+    private final RequestModel model;
 
     final Lock interceptLock;
     final Condition interceptCondition;
@@ -186,6 +189,5 @@ public class VajraInterceptController implements ActionListener{
             interceptLock.unlock();
         }
     }
-
 
 }

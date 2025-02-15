@@ -67,7 +67,7 @@ public class ResponseInterceptorHandler {
 
 
 
-        logger.log(Level.INFO, "ResponseInterceptorHandler: formattedResponse = " + formattedResponse.toString());
+        logger.log(Level.INFO, "ResponseInterceptorHandler: formattedResponse = " + formattedResponse);
         return formattedResponse.toString();
 
 //        LoggerUtil.log("Intercepted Response:");

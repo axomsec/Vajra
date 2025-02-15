@@ -25,7 +25,7 @@ public class RequestInterceptorHandler {
 
 
     public static class InterceptedRequestData {
-        private String requestLine;
+        private final String requestLine;
         private final LinkedHashMap<String, String> headers;
         private final String body;
 
@@ -217,8 +217,8 @@ public class RequestInterceptorHandler {
             for (String pair : pairs) {
                 int idx = pair.indexOf("=");
                 if (idx != -1) {
-                    String key = URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8.name());
-                    String value = URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8.name());
+                    String key = URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8);
+                    String value = URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8);
                     formData.put(key, value);
                 }
             }

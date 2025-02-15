@@ -22,7 +22,7 @@ import java.util.Date;
 
 public class CertificateUtil {
 
-    private static String PASSWORD = "changeit";
+    private static final String PASSWORD = "changeit";
 
 
     // this method helps uses to generate .cer file and a .pem file
