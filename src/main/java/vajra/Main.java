@@ -108,7 +108,7 @@ public class Main {
             });
 
             HttpProxyServer server = DefaultHttpProxyServer.bootstrap()
-                    .withPort(8080)
+                    .withPort(8888)
                     .withManInTheMiddle(mitmManager)
                     .withFiltersSource(new InterceptingFilter(view, controller, vajraHistoryController, interceptLock, interceptCondition))
                     .withAllowLocalOnly(false)

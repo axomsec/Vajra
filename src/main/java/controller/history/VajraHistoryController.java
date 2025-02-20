@@ -28,6 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 public class VajraHistoryController implements ActionListener {
@@ -59,6 +63,11 @@ public class VajraHistoryController implements ActionListener {
 
     // Add a logger instance
     private static final Logger logger = Logger.getLogger(VajraHistoryController.class.getName());
+
+    // Add this field at the top of the class
+    private static final int UPDATE_DELAY_MS = 100; // Adjust as needed
+    private ScheduledFuture<?> pendingUpdate;
+    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
 
     public VajraHistoryController(Vajra view, JTable httpHistoryTable, JMenuItem sendToRepeaterItem) {
@@ -155,16 +164,6 @@ public class VajraHistoryController implements ActionListener {
     }
 
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-
-        int selectedRow = httpHistoryTable.getSelectedRow();
-        System.out.println(selectedRow);
-
-        // change the second param for getting access to other details on the table.
-        System.out.println(httpHistoryTable.getValueAt(selectedRow, 1 ));
-    }
-
     private void handleSendToRepeaterMenuClick(){
         System.out.println("inside handleSendToRepeaterMenuClick");
     }
@@ -182,43 +181,49 @@ public class VajraHistoryController implements ActionListener {
 
 
     public void populateTable(DefaultTableModel tableModel) {
-//        javax.swing.SwingUtilities.invokeLater(() -> {
-            // Preserve the currently selected Request ID
-            int selectedRow = httpHistoryTable.getSelectedRow();
-            Integer selectedRequestId = null;
-            if (selectedRow != -1) {
-                selectedRequestId = (Integer) httpHistoryTable.getValueAt(selectedRow, 0); // Assuming column 0 is Request ID
-            }
+        // Cancel any pending update
+        if (pendingUpdate != null) {
+            pendingUpdate.cancel(false);
+        }
 
-            // Clear existing data
-            tableModel.setRowCount(0);
+        // Schedule a new update with delay
+        pendingUpdate = executor.schedule(() -> {
+            SwingUtilities.invokeLater(() -> {
+                // Cache the selected row
+                int selectedRow = httpHistoryTable.getSelectedRow();
+                Integer selectedRequestId = null;
+                if (selectedRow != -1) {
+                    selectedRequestId = (Integer) httpHistoryTable.getValueAt(selectedRow, 0);
+                }
 
-            List<HttpHistoryEntryModel> snapshot;
-            synchronized (historyList){
-                snapshot = new ArrayList<>(historyList);
-            }
+                // Disable table repainting temporarily
+                httpHistoryTable.setDoubleBuffered(true);
+                tableModel.setRowCount(0);
 
-            // Repopulate the table with all entries
-            for (HttpHistoryEntryModel entry : snapshot) {
-                javax.swing.SwingUtilities.invokeLater(() -> {
+                List<HttpHistoryEntryModel> snapshot;
+                synchronized (historyList) {
+                    snapshot = new ArrayList<>(historyList);
+                }
+
+                // Add all rows at once
+                for (HttpHistoryEntryModel entry : snapshot) {
                     tableModel.addRow(entry.toTableRow());
-                });
-            }
+                }
 
-            // Restore the selection if a Request ID was previously selected
-
-            if (selectedRequestId != null) {
-                for (int row = 0; row < tableModel.getRowCount(); row++) {
-                    Integer requestId = (Integer) tableModel.getValueAt(row, 0); // Assuming column 0 is Request ID
-                    if (selectedRequestId.equals(requestId)) {
-                        httpHistoryTable.setRowSelectionInterval(row, row);
-                        break;
+                // Restore selection if needed
+                if (selectedRequestId != null) {
+                    for (int row = 0; row < tableModel.getRowCount(); row++) {
+                        if (selectedRequestId.equals(tableModel.getValueAt(row, 0))) {
+                            httpHistoryTable.setRowSelectionInterval(row, row);
+                            break;
+                        }
                     }
                 }
-            }
 
-
-//        });
+                // Re-enable table repainting
+                httpHistoryTable.setDoubleBuffered(false);
+            });
+        }, UPDATE_DELAY_MS, TimeUnit.MILLISECONDS);
     }
 
 
@@ -399,6 +404,66 @@ public class VajraHistoryController implements ActionListener {
      */
     public Map<Integer, String> getReconstructedFullResponses() {
         return reconstructedFullResponses;
+    }
+
+    // Add cleanup method
+    public void cleanup() {
+        executor.shutdown();
+    }
+
+
+
+    /**
+     * Sends the selected request from history to a new repeater tab
+     */
+    private void sendToRepeater() {
+        int selectedRow = httpHistoryTable.getSelectedRow();
+        if (selectedRow == -1) {
+            return;
+        }
+
+        // Get request ID from first column
+        int requestId = (Integer) httpHistoryTable.getValueAt(selectedRow, 0);
+
+        // Get the full request from our stored map
+        String fullRequest = reconstructedFullRequests.get(requestId);
+        if (fullRequest == null) {
+            return;
+        }
+
+        // Create new repeater tab with incrementing number
+        int tabCount = view.getRepeaterTabs().getTabCount() + 1;
+        String tabTitle = "Repeater " + tabCount;
+
+        // Create components for new tab
+        JPanel repeaterTabPanel = new JPanel(new BorderLayout());
+        JSplitPane requestResponseSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+
+        // Request panel
+        JTextArea requestArea = view.getTextArea1();
+        requestArea.setText(fullRequest);
+
+        // Response panel
+        JTextArea responseArea = new JTextArea();
+        responseArea.setEditable(false);
+
+        // Add request/response panels to split pane
+        requestResponseSplitPane.setTopComponent(new JScrollPane(requestArea));
+        requestResponseSplitPane.setBottomComponent(new JScrollPane(responseArea));
+        requestResponseSplitPane.setDividerLocation(400);
+
+        repeaterTabPanel.add(requestResponseSplitPane);
+
+        // Add tab to repeater
+        view.getRepeaterTabs().addTab(tabTitle, repeaterTabPanel);
+        view.getRepeaterTabs().setSelectedIndex(tabCount - 1);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == sendToRepeaterItem) {
+//            sendToRepeater();
+        }
     }
 
 }

@@ -110,8 +110,18 @@ public class Vajra extends JFrame {
     private JTabbedPane repeaterTabs;
     private JButton sendButton;
     private JButton cancelButton;
+    
     private JTextArea textArea1;
     private JTextArea textArea2;
+
+    public JTextArea getTextArea1() {   
+        return textArea1;
+    }
+
+    public JTextArea getTextArea2() {
+        return textArea2;
+    }   
+
 
     // --> end repeater
 
@@ -198,16 +208,22 @@ public class Vajra extends JFrame {
         httpHistoryTable.getTableHeader().setPreferredSize(new Dimension(httpHistoryTable.getColumnModel().getTotalColumnWidth(), 25));
         httpHistoryTable.setModel(tableModel);
 
-        // adding Table Sorter to manage it smoother
-//        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
-//        httpHistoryTable.setRowSorter(sorter);
-//
-//        sorter.setSortKeys(List.of(new RowSorter.SortKey(0, SortOrder.ASCENDING)));
+        // Add these optimizations
+        httpHistoryTable.setDoubleBuffered(true);
+        ((JComponent) httpHistoryTable.getParent()).setDoubleBuffered(true);
+        
+        // Reduce table update frequency
+        tableModel.setRowCount(0);
+        httpHistoryTable.setAutoCreateRowSorter(true);
+        httpHistoryTable.getTableHeader().setReorderingAllowed(false);
+        
+        // Optional: Set a larger row height if needed
+        httpHistoryTable.setRowHeight(25);
 
         // Get the current default renderer for Integer
         TableCellRenderer intRenderer = httpHistoryTable.getDefaultRenderer(Integer.class);
 
-        // Check if it’s a DefaultTableCellRenderer
+        // Check if it's a DefaultTableCellRenderer
         if (intRenderer instanceof DefaultTableCellRenderer) {
             ((DefaultTableCellRenderer) intRenderer).setHorizontalAlignment(SwingConstants.LEFT);
         }
