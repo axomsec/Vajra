@@ -20,7 +20,7 @@ Vajra is a powerful web security testing tool built in Java that provides featur
 - [License](#license)
 - [Contact](#contact)
 ---
-## Features
+## 🚀 Features
 
 - HTTP/HTTPS Traffic Interception
 - Request/Response History Logging
@@ -29,7 +29,7 @@ Vajra is a powerful web security testing tool built in Java that provides featur
 - Customizable Proxy Settings
 - Request/Response Viewer with Syntax Highlighting
 ---
-## Installation
+## 📦 Installation
 
 ### Prerequisites
 - Java 11 or higher
@@ -53,7 +53,7 @@ cd Vajra
 java -jar target\Vajra-1.0-SNAPSHOT.jar
 ````
 ---
-## Usage
+## ▶️ Usage
 
 ### Intercepting HTTP/HTTPS Traffic
 
@@ -79,26 +79,26 @@ java -jar target/vajra-1.0-SNAPSHOT.jar
 1. Configure the proxy settings in the settings panel   
 
 ---
-## Screenshots
+## 🖼️ Screenshots
 1. [HTTP History](screenshots/http_history.png)
 2. [Intercept](screenshots/http_history.png)
 3. [Settings](screenshots/export_ca_cert.png)
 
 
 ---
-## Contributing
+## 🤝 Contributing
 I have heard the open-source community is magical? Your contribution matters and i am openly looking for contributors.
 1. Fork the repository
 2. Create a new branch
 3. Make your changes and commit them
 4. Push your changes to your fork
 5. Create a pull request
-
-
-📧 **Email:** [rony@axomsec.com](mailto:rony@axomsec.com)
+---
+## 📬 Contact
+**Email:** [rony@axomsec.com](mailto:rony@axomsec.com)
 <br>Feel free to hit me up with an email. 
 
-## License
+## 📝 License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
 
