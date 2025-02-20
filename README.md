@@ -12,13 +12,13 @@ Vajra is a powerful web security testing tool built in Java that provides featur
 ---
 ## 📖 Table of Contents
 
-- [Installation](#installation)
-- [Usage](#usage)
-- [Features](#features)
-- [Screenshots](#screenshots)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Features](#-features)
+- [Screenshots](#-screenshots)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Contact](#-contact)
 ---
 ## 🚀 Features
 
