@@ -81,7 +81,7 @@ java -jar target/vajra-1.0-SNAPSHOT.jar
 ---
 ## 🖼️ Screenshots
 1. [HTTP History](screenshots/http_history.png)
-2. [Intercept](screenshots/http_history.png)
+2. [Intercept](screenshots/main.png)
 3. [Settings](screenshots/export_ca_cert.png)
 
 
