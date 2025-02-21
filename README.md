@@ -98,6 +98,9 @@ I have heard the open-source community is magical? Your contribution matters and
 **Email:** [rony@axomsec.com](mailto:rony@axomsec.com)
 <br>Feel free to hit me up with an email. 
 
+## 🎗️ Sponser
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/ronydas)
+
 ## 📝 License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
